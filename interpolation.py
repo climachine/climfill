@@ -7,6 +7,7 @@ version on daily resolution, with dask if possible
 
 # imports
 import numpy as np
+import xarray.ufuncs as xu
 from scipy.ndimage.filters import generic_filter
 from numba_nanmean import nbnanmean 
 from scipy import LowLevelCallable
@@ -45,30 +46,28 @@ def gapfill_interpolation(data):
 
     return data
 
-lostmask = xu.isnan(dataxr_lost) # missing (lost + orig missing + ocean) is True, rest is False
+def remove_ocean_points(data, landlon, landlat):
+    """
+    change data cube from (...,'latitude','longitude') to (...,'landpoints'), efficiently removing all ocean points for reducing the file size.
+    """
+    return data.isel(longitude=xr.DataArray(landlon, dims='landpoints'), latitude=xr.DataArray(landlat, dims='landpoints'))
 
-# extract and save land-sea mask
-logging.info('extract land sea mask ...')
-lsm = timeinvariant.loc['lsm']
-landmask = (lsm.squeeze() > 0.8).load() # land is 1, ocean is 0
-landlat, landlon = np.where(landmask)
-landmask.to_netcdf(netcdfpath + f'landmask_idebug_{idebugspace}.nc')
 
-# remove ocean points 
-logging.info('remove ocean points ...')
-dataxr = dataxr.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
-                     latitude=xr.DataArray(landlat, dims='landpoints'))
-dataxr_lost = dataxr_lost.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
-                                        latitude=xr.DataArray(landlat, dims='landpoints'))
-dataxr_filled = dataxr_filled.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
-                                        latitude=xr.DataArray(landlat, dims='landpoints'))
-timeinvariant = timeinvariant.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
-                                        latitude=xr.DataArray(landlat, dims='landpoints'))
-lostmask = lostmask.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
-                                        latitude=xr.DataArray(landlat, dims='landpoints'))
+if __name__ == '__main__':
+    
+    data = xr.open_dataset('/path/to/gappy/dataset')
+    log_fracmis(data, 'after reading file')
 
-dataxr_lost = dataxr_lost.sel(variable=varnames)
-dataxr = dataxr.sel(variable=varnames)
-dataxr_lost.to_netcdf(netcdfpath + f'dataxr_lost_{missingness}_{frac_missing}_idebug_{idebugspace}.nc') # one day missing in tpmask
-dataxr.to_netcdf(netcdfpath + f'dataxr_idebug_{idebugspace}.nc')
-log_fracmis(dataxr_filled, 'after remove ocean')
+    mask = xu.isnan(data) # create mask of missing values
+
+    data = gapfill_interpolation(data) # initial gapfill all missing values with interpolation
+    log_fracmis(data, 'after interpolation') # should be zero
+
+    # optional: remove ocean points for reducing file size
+    landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
+    landlat, landlon = np.where(landmask)
+    data = remove_ocean_points(data, landlat, landlon)
+    mask = remove_ocean_points(mask, landlat, landlon)
+
+    # data.to_netcdf ...
+    # mask.to_netcdf ...
