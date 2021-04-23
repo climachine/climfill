@@ -6,24 +6,9 @@ A PROPER DOCSTRING WILL APPEAR HERE
 
 import numpy as np
 import copy
+from numpy import Inf
 
-# create mask of missing values
-
-# initial gapfill
-
-# stack, remove ocean
-
-# add constant features, add timestamp, add embedded features
-
-# normalise data
-
-# cluster data
-
-# run imputation algorithm: regression function per variable, dict of arguments of init, dict of arguments of fit, data, lost mask, epsilon, maxiter
-
-# unstack, select variables, merge clusters, renormalise
-
-class Imputation: # TODO name?
+class Imputation: 
     """
     A Gapfill procedure for multivariate data.
 
@@ -97,7 +82,7 @@ class Imputation: # TODO name?
         """
         logging.info(f'{logtrunc} new delta: {np.round(self.delta_n, 9)} diff: ' + str(np.round(self.delta_n_old - self.delta_n, 9)) + f' niter: {self.iter} niterbelow: {self.iter_below}')
 
-    def impute(self, data, lostmask, ordered_dict, kwargs={}, verbose=1, logtrunc=''):
+    def impute(self, data, lostmask, regr_dict, kwargs={}, verbose=1, logtrunc=''):
         """
         Impute (i.e. Gapfill) data by regressing each variable (i.e. column) in data with 
         all other variables in data.
@@ -108,7 +93,7 @@ class Imputation: # TODO name?
             feature table (stacked xarray) that can be unstacked along datapoints
         lostmask: 
             xarray in the same shape as data, indicating which values were originally missing as True
-        ordered_dict: list of variables where estimates need to be updated
+        regr_dict: list of variables where estimates need to be updated
 
         kwargs:
     
@@ -128,10 +113,9 @@ class Imputation: # TODO name?
         self.iter = 0
         self.iter_below = 0
 
-        if return_regr:
-            self.fittedregr = dict()
+        self.fittedregr = dict()
 
-        varnames = [varname for varname, regr in ordered_dict.items()] # this needs to be an OrderedDict!!!!
+        varnames = [varname for varname, regr in regr_dict.items()] # within a single run, without changing the dict, the order is not mutated, see https://stackoverflow.com/questions/52268262/does-pythons-dict-items-always-return-the-same-order
         print(varnames)
 
         # while convergence not reached, loop over features and impute iteratively
@@ -140,7 +124,7 @@ class Imputation: # TODO name?
             # store previously imputed matrix
             data_old = data.copy(deep=True)
             np.array_equal(data, data_old) # keep this otherwise on euler diff gets zero. bug 05032021
-            for varname, Regr_orig in ordered_dict.items():
+            for varname, Regr_orig in regr_dict.items():
                 
                 # this is very important. some concurrent.futures threads abort because Regr.predict() returns only Infs, because n_estimators within Regr is changed in second variable if Regr is not newly created each iteration. debug took three days uff
                 Regr = copy.copy(Regr_orig)
@@ -190,8 +174,7 @@ class Imputation: # TODO name?
                     Regr.fit(X_obs, y_obs, **kwargs)
                 else:
                     Regr.fit(X_obs, y_obs)
-                if return_regr:
-                    self.fittedregr[varname] = Regr
+                self.fittedregr[varname] = Regr
 
                 # predict
                 if verbose >= 2:
@@ -246,20 +229,23 @@ class Imputation: # TODO name?
 
 if __name__ == '__main__':
     from sklearn.ensemble import RandomForestRegressor
+    from collections import OrderedDict
     import xarray as xr
     import numpy as np
 
-    variables = ['temperature', 'precipitation']
+    databatch = xr.open_dataset('/path/to/gappy/data/cluster')
+    maskbatch = xr.open_dataset('/path/to/mask/data/cluster')
+
+    variables = ['temperature', 'precipitation', 'test', 'test2']
     rf_settings = {'n_estimators': 100,
                   'min_samples_leaf': 2,
                   'max_features': 0.5, 
                   'max_samples': 0.5}
     regr_dict = {variable: RandomForestRegressor(**rf_settings) for variable in variables}
-    varnames = [varname for varname, regr in regr_dict.items()] # this needs to be an OrderedDict!!!!
-    print(varnames); quit()
+    varnames = [varname for varname, regr in regr_dict.items()] 
     maxiter = 10
 
     impute = Imputation(maxiter=maxiter)
-    data = xr.DataArray(np.zeros((10,10)))
-    mask = xr.DataArray(np.zeros((10,10)))
-    imputed_data, fitted_regr_dict = impute.impute(data, mask, regr_dict)
+    imputed_data, fitted_regr_dict = impute.impute(databatch, maskbatch, regr_dict)
+
+    # imputed_data.to_netcdf ...
