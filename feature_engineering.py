@@ -11,12 +11,7 @@ import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
 import logging
-import argparse
 logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
-logging.getLogger('regionmask').setLevel(logging.WARNING)
-logging.getLogger('fiona').setLevel(logging.WARNING)
-import regionmask
-from namelist import plotpath, years, largefilepath, varnames, invarnames
 from scipy.ndimage.filters import generic_filter
 
 def log_fracmis(data, logtext=''):
@@ -87,6 +82,7 @@ def stack_constant_maps(data, constant_maps):
     return constant_maps
     
 if __name__ == '__main__':
+
     data = xr.open_dataset('/path/to/gappy/dataset')
     mask = xr.open_dataset('/path/to/mask/dataset')
     constant_maps = xr.open_dataset('/path/to/constant/maps')

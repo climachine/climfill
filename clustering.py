@@ -6,12 +6,9 @@ impute given dataset with randomforest in random bags of data
 """
 
 # parameter import
-from namelist import varnames
 from sklearn.cluster import MiniBatchKMeans, OPTICS
-import argparse
 import numpy as np
 import random
-from calendar import monthrange
 import xarray as xr
 import logging
 logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
