@@ -5,6 +5,17 @@ DOCSTRING
     @date: 23 04 2021
 """
 
+import numpy as np
+import xarray as xr
+import xarray.ufuncs as xu
+from interpolation import gapfill_interpolation, remove_ocean_points
+from feature_engineering import  create_precip_binary, logscale_precip, create_lat_lon_features,
+                                 create_time_feature, creade_embedded_features, stack_constant_maps
+                                 normalise, stack
+from clusterings import kmeans_clustering
+from regression_learning import Imputation
+from sklearn.ensemble import RandomForestRegressor
+from postproc import exp_precip, renormalise, unstack
 
 # load data
 data = xr.open_dataset('/path/to/gappy/dataset')
@@ -18,6 +29,8 @@ variables = data.coords['variables'].values
 
 # step 1: interpolation
 data = gapfill_interpolation(data)
+
+# optional: save interpolation result for comparison
 
 # optional: remove ocean points for reducing file size
 landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
@@ -92,6 +105,29 @@ for e in epochs:
         impute = Imputation(maxiter=maxiter)
         imputed_data, fitted_regr_dict = impute.impute(databatch, maskbatch, regr_dict)
 
-        # renormalise
-        # unstack
         # imputed_data.to_netcdf ... 
+
+# add cluster together again
+data_imputed = data.copy(deep=True)
+data_imputed = data_imputed.where(data_imputed == 0,0) # set all values zero
+
+for e in epochs:
+    filenames = glob.glob('path/to/files/of/this/epoch')
+    data_epoch = xr.open_mfdataset(filenames, combine='nested', concat_dim='datapoints').load()
+
+    data_epoch = data_epoch['data']
+    data_epoch = unstack(data_epoch)
+    data_epoch = data_epoch.sel(variable=variables)
+
+    data_imputed = data_imputed + data_epoch
+
+data_imputed = data_imputed / len(epochs)
+
+# unstack
+data_imputed = unstack(data_imputed
+
+# renormalise
+data_imputed = renormalise(data_imputed, datamean, datastd)
+
+# save result
+# data_imputed.to_netcdf(...)
