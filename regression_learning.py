@@ -229,7 +229,6 @@ class Imputation:
 
 if __name__ == '__main__':
     from sklearn.ensemble import RandomForestRegressor
-    from collections import OrderedDict
     import xarray as xr
     import numpy as np
 
