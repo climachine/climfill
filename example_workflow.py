@@ -92,4 +92,6 @@ for e in epochs:
         impute = Imputation(maxiter=maxiter)
         imputed_data, fitted_regr_dict = impute.impute(databatch, maskbatch, regr_dict)
 
+        # renormalise
+        # unstack
         # imputed_data.to_netcdf ... 
