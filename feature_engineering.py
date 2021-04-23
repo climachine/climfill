@@ -69,7 +69,7 @@ def create_embedded_features(data, s, l):
     tmp = data.sel(variable=varnames).rolling(time=l-s, center=False, min_periods=1).mean()
 
     # overwrite time stamp to current day
-    tmp = tmp.assign_coords(time=[time + np.timedelta64(s,'D') for time in tmp.coords['time'].values])
+    tmp = tmp.assign_coords(time=[time + np.timedelta64(l,'D') for time in tmp.coords['time'].values])
 
     # rename feature to not overwrite variable
     tmp = tmp.assign_coords(variable=[f'{var}lag_{s}ff' for var in varnames])
@@ -80,10 +80,16 @@ def create_embedded_features(data, s, l):
 
     return tmp
 
+def stack_constant_maps(data, constant_maps):
+    ntimesteps = data.coords['time'].size
+    constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
+    constant_maps['time'] = data['time'] # timeinvariant needs timestep for concat to work
+    return constant_maps
     
 if __name__ == '__main__':
     data = xr.open_dataset('/path/to/gappy/dataset')
     mask = xr.open_dataset('/path/to/mask/dataset')
+    constant_maps = xr.open_dataset('/path/to/constant/maps')
 
     ip = create_precip_binary(data, varname='tp')
     data = data.to_dataset(dim='variable')
@@ -91,48 +97,31 @@ if __name__ == '__main__':
     data = data.to_array()
     data = logscale_precip(data, varname='tp')
 
-data = xr.concat([data, tmp], dim='variable', join='left', fill_value=0)
+    latitude_arr, longitude_arr = create_lat_lon_features(constant_maps)
+    constant_maps = constant_maps.to_dataset(dim='variable')
+    constant_maps['latdata'] = latitude_arr
+    constant_maps['londata'] = longitude_arr
+    constant_maps = constant_maps.to_array()
 
-# steps of the feature engineering
+    time_arr = create_time_feature(data):
+    data = data.to_dataset(dim='variable')
+    data['timedat'] = time_arr
+    data = data.to_array()
 
-# log-scale precip DONE
+    lag_7ff = create_embedded_features(data, s=0, l=7)
+    lag_7 = create_embedded_features(data, s=7, l=0)
+    lag_30 = create_embedded_features(data, s=30, l=7)
+    lag_180 = create_embedded_features(data, s=180, l=30)
+    data = xr.concat([data, lag_7ff, lag_7, lag_30, lag_180], dim='variable', join='left', fill_value=0)
 
-# add latitude, longitude, time DONE
+    constant_maps = stack_constant_maps(data, constant_maps)
+    data = xr.concat([data, constant_maps], dim='variable')
 
-# add lags DONE
+    data, datamean, datastd = normalise(data)
+    # datamean.to_netcdf ...
+    # datastd.to_netcdf ...
 
-# normalise DONE
-
-# stack constant maps and variables
-
-# stack to datapoints
-
-# divide precip into bool "itrained" and logscaled "itrainedthismuch"
-# needs to happen after desert removal for precip condition
-# now deserts are also filled with -20 but doesn't matter since outside landmask and therfore ignored
-logging.info('normalise precipitation ...')
-log_fracmis(dataxr, 'before logscale precip')
-dataxr = logscale_precip(dataxr)
-log_fracmis(dataxr, 'after logscale precip')
-
-
-tmp = timeinvariant.to_dataset(dim='variable')
-tmp['latdata'] = latitude_arr
-tmp['londata'] = longitude_arr
-tmp['timedat'] = time_arr
-timeinvariant = tmp.to_array()
-
-
-# standardise / normalise data
-dataxr_filled = normalise(dataxr_filled, isave=True)
-timeinvariant = normalise(timeinvariant)
-
-#  stack var and invar
-def stack_constant_maps(data, constant_maps):
-    ntimesteps = data.coords['time'].size
-    constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
-    constant_maps['time'] = data['time'] # timeinvariant needs timestep for concat to work
-    return constant_maps
-
-data = xr.concat([data, constant_maps], dim='variable')
-
+    data = stack(data)
+    mask = stack(mask)
+    # data.to_netcdf ...
+    # mask.to_netcdf ...
