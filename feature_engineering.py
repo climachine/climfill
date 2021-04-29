@@ -18,6 +18,17 @@ def log_fracmis(data, logtext=''):
     logging.info(f'fraction missing {logtext}: {(np.isnan(data).sum() / data.size).values}')
 
 def logscale_precip(data, varname='tp'):
+    """
+    log-scale variable "varname" in data
+
+    Parameters
+    ----------
+    data: xarray dataarray, where varname is the variable that needs to be log-scaled
+
+    Returns
+    ----------
+    data: data with variable log-scaled
+    """
     data.loc[varname] = data.loc[varname].where(data.loc[varname] > 0.000001, -1) # define lower threshold for "no rain"
     data.loc[varname] = xu.log(data.loc[varname])
     data.loc[varname] = data.loc[varname].where(~np.isnan(data.loc[varname]), -20) # all zero precip got -1, all -1 got nan, all nan get -20
@@ -28,13 +39,23 @@ def create_precip_binary(data, varname='tp'):
     ip = ip.rename('ip')
     return ip
 
-def normalise(data, isave=False):
-    """ mean zero unit (1) standard deviation """
+def normalise(data):
+    """
+    for each variable (i.e. across the dimension 'variable') normalise the data to mean zero and standard deviation one
+
+    Parameters
+    ----------
+    data: xarray dataarray, with dimensions variable, time, landpoints
+
+    Returns
+    ----------
+    data: data normalised
+    datamean: mean for each variable, for renormalisation
+    datastd: std for each variable, for renormalisation
+    """
     datamean = data.mean(dim=('time','landpoints'))
     datastd = data.std(dim=('time','landpoints'))
     data = (data - datamean) / datastd
-    #datamean = datamean.sel(variable=varnames)
-    #datastd = datastd.sel(variable=varnames)
     return data, datamean, datastd
 
 def stack(data):
@@ -42,22 +63,55 @@ def stack(data):
     return data.stack(datapoints=('time','landpoints')).reset_index('datapoints').T.to_dataset(name='data')
 
 def create_lat_lon_features(constant_maps):
+    """
+    create latitude and longitude as additional feature for data
+
+    Parameters
+    ----------
+    data: xarray dataarray, with dimensions including latitude and longitude
+
+    Returns
+    ----------
+    latitude_arr
+    longitude_arr
+    """
     londata, latdata = np.meshgrid(constant_maps.longitude, constant_maps.latitude)
     latitude_arr = (('latitude', 'longitude'), latdata)
     longitude_arr = (('latitude', 'longitude'), londata)
     return latitude_arr, longitude_arr
 
 def create_time_feature(data):
+    """
+    create timestep as additional feature for data
+
+    Parameters
+    ----------
+    data: xarray dataarray, with dimensions including landpoints, time 
+
+    Returns
+    ----------
+    time_arr: xarray with same dimensions as one feature in array describing time step
+    """
     _, ntimesteps, nlandpoints = data.shape
     timedat = np.arange(ntimesteps)
     timedat = np.tile(timedat, nlandpoints).reshape(nlandpoints,*timedat.shape).T
     time_arr = (('time','landpoints'), timedat)
     return time_arr
 
-def create_embedded_features(data, s, l):
+def create_embedded_features(data, s, l, varnames):
     """
-    window size s
-    time lag l
+    for each variable, create embedded features of data with mean over window size s and time lag l
+
+    Parameters
+    ----------
+    data: xarray dataarray, with dimensions including variable, time 
+    varnames: list of all variables for calculating this embedded feature
+    s: int, window size in days
+    l: int, lag of window from today in days
+
+    Returns
+    ----------
+    tmp: embedded features of variables to be added to data
     """
 
     # rolling window average
