@@ -9,3 +9,7 @@ The framework consists of four steps:
 4. regression learning
 
 the necessary functions are in the respective scripts. an example workflow going through all four steps is shown in example_workflow.py
+
+
+References:
+Bessenbacher, V., Gudmundsson, L. and Seneviratne, S.I.: CLIMFILL: A Framework for Intelligently Gap-filling Earth Observations (in prep.)
