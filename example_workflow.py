@@ -34,9 +34,8 @@ data = gapfill_interpolation(data)
 
 # optional: remove ocean points for reducing file size
 landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
-landlat, landlon = np.where(landmask)
-data = remove_ocean_points(data, landlat, landlon)
-mask = remove_ocean_points(mask, landlat, landlon)
+data = remove_ocean_points(data, landmask)
+mask = remove_ocean_points(mask, landmask)
 
 # step 2: feature engineering
 

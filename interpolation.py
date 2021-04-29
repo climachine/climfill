@@ -20,14 +20,23 @@ mean_fct = LowLevelCallable(nbnanmean.ctypes)
 def log_fracmis(data, logtext=''):
     logging.info(f'fraction missing {logtext}: {(np.isnan(data).sum() / data.size).values}')
 
-def gapfill_interpolation(data):
+def gapfill_interpolation(data, n=5):
+    """
+    Impute (i.e. Gapfill) data by infilling the spatiotemporal mean for each variable independently. A cube of n 5-pixel side length surrounding each missing value is taken and the mean of all non-missing values in this cube is computed and used to infill the missing value . If a point cannot be filled because all the values in the neighbourhood are missing as well, the points is filled by the local monthly climatology. Any remaining missing points are filled by the local temporal mean, or, if not available, the global mean of the variable.
 
-    # grace data: special case monthly interpolation
-    data.loc['tws'] = (data.loc['tws'].ffill(dim='time').fillna(0) + data.loc['tws'].bfill(dim='time').fillna(0))/2
-    log_fracmis(data, 'after grace gapfill')
+    Parameters
+    ----------
+    data: xarray dataarray, with coordinates time, latitude, longitude and variable
+
+    n: size of the cube in any spatiotemporal dimension
+
+    Returns
+    ----------
+    imputed_data: data of the same shape as input data, where all values that were not missing are still the same and all values that were originally missing are imputed via spatiotemporal mean
+    """
 
     # infill spatiotemporal mean
-    footprint = np.ones((1,5,5,5))
+    footprint = np.ones((1,n,n,n))
     tmp = generic_filter(data, mean_fct, footprint=footprint, mode='nearest')
     data = data.fillna(tmp)
     log_fracmis(data, 'after filtering')
@@ -46,10 +55,21 @@ def gapfill_interpolation(data):
 
     return data
 
-def remove_ocean_points(data, landlon, landlat):
+def remove_ocean_points(data, landmask):
     """
-    change data cube from (...,'latitude','longitude') to (...,'landpoints'), efficiently removing all ocean points for reducing the file size.
+    Compress data cube by removing all ocean points from the data. The data cube that has the dimensions latitude and longitude will be compressed such that the returned data cube has replaced the dimensions latitude and longitude by the dimension landpoints. Can also be used to remove all points irrelevant for further analysis (region zoom in, remove glaciated regions, only look at one country, only look at ocean,...) 
+
+    Parameters
+    ----------
+    data: xarray dataarray, coordinates including latitude and longitude 
+
+    landmask: boolean xarray dataarray with only the coordinates latitude and longitude, where grid points on land are True and grid points in the ocean (or regions that are not relevant for research) are False
+
+    Returns
+    ----------
+    imputed_data: data of the same shape as input data, where all values that were not missing are still the same and all values that were originally missing are imputed via spatiotemporal mean
     """
+    landlat, landlon = np.where(landmask)
     return data.isel(longitude=xr.DataArray(landlon, dims='landpoints'), latitude=xr.DataArray(landlat, dims='landpoints'))
 
 
@@ -65,9 +85,8 @@ if __name__ == '__main__':
 
     # optional: remove ocean points for reducing file size
     landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
-    landlat, landlon = np.where(landmask)
-    data = remove_ocean_points(data, landlat, landlon)
-    mask = remove_ocean_points(mask, landlat, landlon)
+    data = remove_ocean_points(data, landmask)
+    mask = remove_ocean_points(mask, landmask)
 
     # data.to_netcdf ...
     # mask.to_netcdf ...

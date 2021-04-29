@@ -15,7 +15,8 @@ class Imputation:
     An algorithm designed to fill gaps in tabular data by iteratively
     learning to regress one variable (or feature) with all the others. The algorithm needs
     initial estimates provided for the gaps which it uses as a starting point for 
-    the iterative procedure.
+    the iterative procedure. Built upon [1] but with several adaptations that tailor it to 
+    the needs of geoscientific datasets (for more details see [2]).
 
     ...
 
@@ -33,27 +34,20 @@ class Imputation:
     miniter_below: int, default=5
     minimum number of iterations after convergence criterion is checked before iteration is stopped. Only applied if convergence is reached via epsilon, not via maxiter
 
-    Methods
-    -------
-    # TODO add
-
-    Attributes
-    ----------
-    # TODO add  
-
     References
     ----------
     .. [1] Stekhoven, D. J. and Buehlmann, P. (2012): MissForest -- non-parametric missing value imputation for mixed-type data. Bioinformatics, 28, 1, 112-118.
+    .. [2] Bessenbacher, V., Gudmundsson, L., Seneviratne, S. I. (2021): CLIMFILL: A Framework for Intelligently Gap-filling Earth Observations (in prep.)
 
     Examples
     --------
     # TODO missing: init gapfill, data production
 
-    from climfill import Climfill
+    from regression_learning import Imputation
     import xarray as xr
     import numpy as np
 
-    data = xr.open_dataset(largefilepath + f'features_init_label_e{e}f{f}_{initstr}.nc')
+    data = xr.open_dataset('/path/to/gappy/dataset')
     mask = np.isnan(data)
 
     variables = ['temperature', 'precipitation']
@@ -89,18 +83,20 @@ class Imputation:
 
         Parameters
         ----------
-        data: xarray dataarray
-            feature table (stacked xarray) that can be unstacked along datapoints
+        data: xarray dataarray, feature table with rows as datapoints and columns as features
         lostmask: 
-            xarray in the same shape as data, indicating which values were originally missing as True
-        regr_dict: list of variables where estimates need to be updated
+            boolean xarray in the same shape as data, indicating which values were originally missing as True and all others as False
+        regr_dict: dictionary where the keys are the names of the gappy variables that form a part of the columns in data. variable names must match the coordinate names of data column names. Values are instances of regression functions (e.g. scikit-learn's RandomForestRegressor) that have a fit() and a predict() method.
 
-        kwargs:
+        kwargs: optional. Some regression functions need additional keywords for the .fit() method. provide these here
     
-        verbose: int
+        verbose: optional, int debug verbosity
 
         Returns
         ----------
+        imputed_data: data of the same shape as input data, where all values that were not missing are still the same and all values that were originally missing are imputed via regression learning
+
+        fitted_regr_dict: dictionary where the variable names are the keys and the fitted regression functions (including all weights) per variable are the values
         """
 
         if lostmask.sum().values == 0:
