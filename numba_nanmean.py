@@ -1,11 +1,8 @@
 """
-write a generic nanmean function to give to scipy.generic_filter for calculating the temporal and spatial interpolations that is speed up using numba.
+this file contains a fast, cython-based version for the spatiotemporal
+filtering of the data. 
 
-Borrowed from https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
-
-    @author: Verena Bessenbacher
-    @date: 01 04 2020 no april's fool!
-
+Adapted after source: https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
 """
 
 import numpy as np
