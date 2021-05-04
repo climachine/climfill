@@ -21,14 +21,14 @@ dataset.
 import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
-from interpolation import gapfill_interpolation, remove_ocean_points
-from feature_engineering import  create_precip_binary, logscale_precip, create_lat_lon_features,
+from climfill.interpolation import gapfill_interpolation, remove_ocean_points
+from climfill.feature_engineering import  create_precip_binary, logscale_precip, create_lat_lon_features,
                                  create_time_feature, creade_embedded_features, stack_constant_maps
                                  normalise, stack
-from clusterings import kmeans_clustering
-from regression_learning import Imputation
+from climfill.clusterings import kmeans_clustering
+from climfill.regression_learning import Imputation
 from sklearn.ensemble import RandomForestRegressor
-from postproc import exp_precip, renormalise, unstack
+from climfill.postproc import exp_precip, renormalise, unstack
 
 # load data
 data = xr.open_dataset('/path/to/gappy/dataset')
