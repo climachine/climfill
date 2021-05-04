@@ -12,8 +12,7 @@ from numba.types import CPointer, float64, intc, intp, voidptr
 
 
 # mean of footprint as I need it
-@cfunc(intc(CPointer(float64), intp,
-            CPointer(float64), voidptr))
+@cfunc(intc(CPointer(float64), intp, CPointer(float64), voidptr))
 def nbnanmean(values_ptr, len_values, result, data):
     values = carray(values_ptr, (len_values,), dtype=float64)
     result[0] = np.nan
@@ -24,5 +23,5 @@ def nbnanmean(values_ptr, len_values, result, data):
             tmp = tmp + v
             i = i + 1
     if i != 0:
-        result[0] = tmp / max(i,1)
+        result[0] = tmp / max(i, 1)
     return 1

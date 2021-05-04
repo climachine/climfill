@@ -8,7 +8,6 @@ with open("climfill/version.py") as f:
     version = line.split("=")[1]
     __version__ = version
 
-
     setup(
         name="climfill",
         version=__version__,
@@ -31,5 +30,5 @@ with open("climfill/version.py") as f:
             "Topic :: Scientific/Engineering :: Environmental Science",
             "Topic :: Scientific/Engineering :: Hydrology",
         ],
-        python_requires="3.6", # >=??
-)
+        python_requires="3.6",  # >=??
+    )
