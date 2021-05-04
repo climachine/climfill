@@ -23,24 +23,28 @@ import glob
 import xarray as xr
 import logging
 import argparse
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
-logging.getLogger('matplotlib').setLevel(logging.WARNING) # no matplotlib logging
+logging.basicConfig(format='%(asctime)s - %(message)s', 
+                    datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 from namelist import largefilepath, varnames
 import random
 import numpy as np
 import xarray.ufuncs as xu
 
 def unstack(data):
-    return data.set_index(datapoints=('time','landpoints')).unstack('datapoints')
+    return data.set_index(datapoints=('time','landpoints'))
+               .unstack('datapoints')
 
 def renormalise(data, datamean, datastd):
     data = data * datastd + datamean
     return data
 
 def exp_precip(data):
-    data.loc['tp'] = data.loc['tp'].where(data.loc['tp'] > -19, np.nan) # all -20 get nan
-    data.loc['tp'] = xu.exp(data.loc['tp']) # all nan stay nan
-    data.loc['tp'] = data.loc['tp'].where(~np.isnan(data.loc['tp']), 0) # all nan get zero precip
+    # all -20 get nan
+    data.loc['tp'] = data.loc['tp'].where(data.loc['tp'] > -19, np.nan) 
+    # all nan stay nan
+    data.loc['tp'] = xu.exp(data.loc['tp']) 
+    # all nan get zero precip
+    data.loc['tp'] = data.loc['tp'].where(~np.isnan(data.loc['tp']), 0) 
     return data
 
 if __name__ == '__main__':
@@ -51,7 +55,8 @@ if __name__ == '__main__':
 
     for e in epochs:
         filenames = glob.glob('path/to/files/of/this/epoch')
-        data_epoch = xr.open_mfdataset(filenames, combine='nested', concat_dim='datapoints').load()
+        data_epoch = xr.open_mfdataset(filenames, combine='nested', 
+                                       concat_dim='datapoints').load()
 
         data_epoch = data_epoch['data']
         data_epoch = unstack(data_epoch)

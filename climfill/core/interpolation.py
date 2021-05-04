@@ -26,27 +26,39 @@ from scipy.ndimage.filters import generic_filter
 from .numba_nanmean import nbnanmean 
 from scipy import LowLevelCallable
 import logging
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(message)s', 
+                    datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 
 # fast spatiotemporal mean with cython
 mean_fct = LowLevelCallable(nbnanmean.ctypes)
 
 def log_fracmis(data, logtext=''):
-    logging.info(f'fraction missing {logtext}: {(np.isnan(data).sum() / data.size).values}')
+    frac_mis = (np.isnan(data).sum() / data.size).values
+    logging.info(f'fraction missing {logtext}: {frac_mis}')
 
 def gapfill_interpolation(data, n=5):
     """
-    Impute (i.e. Gapfill) data by infilling the spatiotemporal mean for each variable independently. A cube of n 5-pixel side length surrounding each missing value is taken and the mean of all non-missing values in this cube is computed and used to infill the missing value . If a point cannot be filled because all the values in the neighbourhood are missing as well, the points is filled by the local monthly climatology. Any remaining missing points are filled by the local temporal mean, or, if not available, the global mean of the variable.
+    Impute (i.e. Gapfill) data by infilling the spatiotemporal mean for each 
+    variable independently. A cube of n 5-pixel side length surrounding each 
+    missing value is taken and the mean of all non-missing values in this 
+    cube is computed and used to infill the missing value . If a point cannot 
+    be filled because all the values in the neighbourhood are missing as well,
+    the points is filled by the local monthly climatology. Any remaining 
+    missing points are filled by the local temporal mean, or, if not available,
+    the global mean of the variable.
 
     Parameters
     ----------
-    data: xarray dataarray, with coordinates time, latitude, longitude and variable
+    data: xarray dataarray, with coordinates time, latitude, longitude 
+        and variable
 
     n: size of the cube in any spatiotemporal dimension
 
     Returns
     ----------
-    imputed_data: data of the same shape as input data, where all values that were not missing are still the same and all values that were originally missing are imputed via spatiotemporal mean
+    imputed_data: xarray dataarray, data of the same shape as input data, 
+        where all values that were not missing are still the same and all 
+        values that were originally missing are imputed via spatiotemporal mean
     """
 
     # infill spatiotemporal mean
@@ -71,20 +83,30 @@ def gapfill_interpolation(data, n=5):
 
 def remove_ocean_points(data, landmask):
     """
-    Compress data cube by removing all ocean points from the data. The data cube that has the dimensions latitude and longitude will be compressed such that the returned data cube has replaced the dimensions latitude and longitude by the dimension landpoints. Can also be used to remove all points irrelevant for further analysis (region zoom in, remove glaciated regions, only look at one country, only look at ocean,...) 
+    Compress data cube by removing all ocean points from the data. The data 
+    cube that has the dimensions latitude and longitude will be compressed 
+    such that the returned data cube has replaced the dimensions latitude and 
+    longitude by the dimension landpoints. Can also be used to remove all 
+    points irrelevant for further analysis (region zoom in, remove glaciated 
+    regions, only look at one country, only look at ocean,...) 
 
     Parameters
     ----------
     data: xarray dataarray, coordinates including latitude and longitude 
 
-    landmask: boolean xarray dataarray with only the coordinates latitude and longitude, where grid points on land are True and grid points in the ocean (or regions that are not relevant for research) are False
+    landmask: boolean xarray dataarray with only the coordinates latitude and 
+        longitude, where grid points on land are True and grid points in the 
+        ocean (or regions that are not relevant for research) are False
 
     Returns
     ----------
-    imputed_data: data of the same shape as input data, where all values that were not missing are still the same and all values that were originally missing are imputed via spatiotemporal mean
+    imputed_data: data of the same shape as input data, where all values that 
+        were not missing are still the same and all values that were originally 
+        missing are imputed via spatiotemporal mean
     """
     landlat, landlon = np.where(landmask)
-    return data.isel(longitude=xr.DataArray(landlon, dims='landpoints'), latitude=xr.DataArray(landlat, dims='landpoints'))
+    return data.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
+                     latitude=xr.DataArray(landlat, dims='landpoints'))
 
 
 if __name__ == '__main__':

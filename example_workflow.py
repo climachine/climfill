@@ -22,8 +22,10 @@ import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
 from climfill.interpolation import gapfill_interpolation, remove_ocean_points
-from climfill.feature_engineering import  create_precip_binary, logscale_precip, create_lat_lon_features,
-                                 create_time_feature, creade_embedded_features, stack_constant_maps
+from climfill.feature_engineering import  create_precip_binary, 
+                                 logscale_precip, create_lat_lon_features,
+                                 create_time_feature, 
+                                 creade_embedded_features, stack_constant_maps
                                  normalise, stack
 from climfill.clusterings import kmeans_clustering
 from climfill.regression_learning import Imputation
@@ -46,7 +48,8 @@ data = gapfill_interpolation(data)
 # optional: save interpolation result for comparison
 
 # optional: remove ocean points for reducing file size
-landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
+# landmask needs dimensions with names 'latitude' and 'longitude'
+landmask = xr.open_dataset('/path/to/landmask') 
 data = remove_ocean_points(data, landmask)
 mask = remove_ocean_points(mask, landmask)
 
@@ -77,7 +80,8 @@ lag_7ff = create_embedded_features(data, s=0, l=7)
 lag_7 = create_embedded_features(data, s=7, l=0)
 lag_30 = create_embedded_features(data, s=30, l=7)
 lag_180 = create_embedded_features(data, s=180, l=30)
-data = xr.concat([data, lag_7ff, lag_7, lag_30, lag_180], dim='variable', join='left', fill_value=0)
+data = xr.concat([data, lag_7ff, lag_7, lag_30, lag_180], 
+                  dim='variable', join='left', fill_value=0)
 
 # (2): concatenate constant maps and variables and features
 constant_maps = stack_constant_maps(data, constant_maps)
@@ -111,13 +115,14 @@ for e in epochs:
                       'min_samples_leaf': 2,
                       'max_features': 0.5, 
                       'max_samples': 0.5}
-        regr_dict = {variable: RandomForestRegressor(**rf_settings) for variable in variables}
+        regr_dict = {variable: RandomForestRegressor(**rf_settings) 
+                     for variable in variables}
         maxiter = 10
 
         impute = Imputation(maxiter=maxiter)
-        imputed_data, fitted_regr_dict = impute.impute(databatch, maskbatch, regr_dict)
+        data_imp, regr_dict = impute.impute(databatch, maskbatch, regr_dict)
 
-        # imputed_data.to_netcdf ... 
+        # data_imp.to_netcdf ... 
 
 # add cluster together again
 data_imputed = data.copy(deep=True)
@@ -125,7 +130,8 @@ data_imputed = data_imputed.where(data_imputed == 0,0) # set all values zero
 
 for e in epochs:
     filenames = glob.glob('path/to/files/of/this/epoch')
-    data_epoch = xr.open_mfdataset(filenames, combine='nested', concat_dim='datapoints').load()
+    data_epoch = xr.open_mfdataset(filenames, combine='nested', 
+                                   concat_dim='datapoints').load()
 
     data_epoch = data_epoch['data']
     data_epoch = unstack(data_epoch)

@@ -25,11 +25,13 @@ import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
 import logging
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(message)s', 
+                    datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 from scipy.ndimage.filters import generic_filter
 
 def log_fracmis(data, logtext=''):
-    logging.info(f'fraction missing {logtext}: {(np.isnan(data).sum() / data.size).values}')
+    frac_mis = (np.isnan(data).sum() / data.size).values
+    logging.info(f'fraction missing {logtext}: {frac_mis}')
 
 def logscale_precip(data, varname='tp'):
     """
@@ -37,15 +39,21 @@ def logscale_precip(data, varname='tp'):
 
     Parameters
     ----------
-    data: xarray dataarray, where varname is the variable that needs to be log-scaled
+    data: xarray dataarray, where varname is the variable that needs to be 
+        log-scaled
 
     Returns
     ----------
     data: data with variable log-scaled
     """
-    data.loc[varname] = data.loc[varname].where(data.loc[varname] > 0.000001, -1) # define lower threshold for "no rain"
+    # define lower threshold for "no rain"
+    data.loc[varname] = data.loc[varname].where(data.loc[varname] > 0.000001,
+                                                -1) 
     data.loc[varname] = xu.log(data.loc[varname])
-    data.loc[varname] = data.loc[varname].where(~np.isnan(data.loc[varname]), -20) # all zero precip got -1, all -1 got nan, all nan get -20
+
+    # all zero precip got -1, all -1 got nan, all nan get -20
+    data.loc[varname] = data.loc[varname].where(~np.isnan(data.loc[varname]),
+                                                -20) 
     return data
 
 def create_precip_binary(data, varname='tp'):
@@ -55,7 +63,8 @@ def create_precip_binary(data, varname='tp'):
 
 def normalise(data):
     """
-    for each variable (i.e. across the dimension 'variable') normalise the data to mean zero and standard deviation one
+    for each variable (i.e. across the dimension 'variable') normalise the data 
+        to mean zero and standard deviation one
 
     Parameters
     ----------
@@ -74,7 +83,8 @@ def normalise(data):
 
 def stack(data):
     # add select variable to remove it in gapfill?
-    return data.stack(datapoints=('time','landpoints')).reset_index('datapoints').T.to_dataset(name='data')
+    return data.stack(datapoints=('time','landpoints'))
+               .reset_index('datapoints').T.to_dataset(name='data')
 
 def create_lat_lon_features(constant_maps):
     """
@@ -89,7 +99,8 @@ def create_lat_lon_features(constant_maps):
     latitude_arr
     longitude_arr
     """
-    londata, latdata = np.meshgrid(constant_maps.longitude, constant_maps.latitude)
+    londata, latdata = np.meshgrid(constant_maps.longitude, 
+                                   constant_maps.latitude)
     latitude_arr = (('latitude', 'longitude'), latdata)
     longitude_arr = (('latitude', 'longitude'), londata)
     return latitude_arr, longitude_arr
@@ -104,17 +115,19 @@ def create_time_feature(data):
 
     Returns
     ----------
-    time_arr: xarray with same dimensions as one feature in array describing time step
+    time_arr: xarray with same dimensions as one feature in array describing 
+        time step
     """
-    _, ntimesteps, nlandpoints = data.shape
+    _, ntimesteps, nlandpts = data.shape
     timedat = np.arange(ntimesteps)
-    timedat = np.tile(timedat, nlandpoints).reshape(nlandpoints,*timedat.shape).T
+    timedat = np.tile(timedat, nlandpoints).reshape(nlandpts,*timedat.shape).T
     time_arr = (('time','landpoints'), timedat)
     return time_arr
 
 def create_embedded_features(data, s, l, varnames):
     """
-    for each variable, create embedded features of data with mean over window size s and time lag l
+    for each variable, create embedded features of data with mean over window 
+        size s and time lag l
 
     Parameters
     ----------
@@ -129,10 +142,12 @@ def create_embedded_features(data, s, l, varnames):
     """
 
     # rolling window average
-    tmp = data.sel(variable=varnames).rolling(time=l-s, center=False, min_periods=1).mean()
+    tmp = data.sel(variable=varnames)
+              .rolling(time=l-s, center=False, min_periods=1).mean()
 
     # overwrite time stamp to current day
-    tmp = tmp.assign_coords(time=[time + np.timedelta64(l,'D') for time in tmp.coords['time'].values])
+    tmp = tmp.assign_coords(time=[time + np.timedelta64(l,'D') 
+                                  for time in tmp.coords['time'].values])
 
     # rename feature to not overwrite variable
     tmp = tmp.assign_coords(variable=[f'{var}lag_{s}ff' for var in varnames])
@@ -146,7 +161,7 @@ def create_embedded_features(data, s, l, varnames):
 def stack_constant_maps(data, constant_maps):
     ntimesteps = data.coords['time'].size
     constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
-    constant_maps['time'] = data['time'] # timeinvariant needs timestep for concat to work
+    constant_maps['time'] = data['time'] # needs timestep for concat to work
     return constant_maps
     
 if __name__ == '__main__':
@@ -176,7 +191,8 @@ if __name__ == '__main__':
     lag_7 = create_embedded_features(data, s=7, l=0)
     lag_30 = create_embedded_features(data, s=30, l=7)
     lag_180 = create_embedded_features(data, s=180, l=30)
-    data = xr.concat([data, lag_7ff, lag_7, lag_30, lag_180], dim='variable', join='left', fill_value=0)
+    data = xr.concat([data, lag_7ff, lag_7, lag_30, lag_180], 
+                     dim='variable', join='left', fill_value=0)
 
     constant_maps = stack_constant_maps(data, constant_maps)
     data = xr.concat([data, constant_maps], dim='variable')

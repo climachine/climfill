@@ -2,7 +2,8 @@
 this file contains a fast, cython-based version for the spatiotemporal
 filtering of the data. 
 
-Adapted after source: https://ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
+Adapted after source: 
+ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
 """
 
 import numpy as np
@@ -40,5 +41,6 @@ if __name__ == '__main__':
 
     # fast numba version
     from scipy import LowLevelCallable
-    res = generic_filter(data, LowLevelCallable(nbnanmean.ctypes), footprint=footprint)
+    res = generic_filter(data, LowLevelCallable(nbnanmean.ctypes), 
+                         footprint=footprint)
     print(res)

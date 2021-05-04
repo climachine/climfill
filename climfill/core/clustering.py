@@ -24,7 +24,8 @@ import numpy as np
 import random
 import xarray as xr
 import logging
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s - %(message)s', 
+                    datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 
 def random_clustering(data, nfolds):
     """
@@ -34,7 +35,8 @@ def random_clustering(data, nfolds):
     ----------
     data: xarray dataarray, with features as columns and datapoints as rows
 
-    nfolds: number of clusters, for more details see sklearn.cluster.MiniBatchKMeans
+    nfolds: number of clusters, for more details see 
+        sklearn.cluster.MiniBatchKMeans
 
     Returns
     ----------
@@ -49,26 +51,32 @@ def random_clustering(data, nfolds):
 
 def kmeans_clustering(data, nfolds, init='k-means++'):
     """
-    Cluster data into environmentally similar datapoints by using scikit.learn MiniBatchKMeans algorithm. 
+    Cluster data into environmentally similar datapoints by using 
+    scikit.learn MiniBatchKMeans algorithm. 
 
     Parameters
     ----------
     data: xarray dataarray, with features as columns and datapoints as rows
 
-    nfolds: number of clusters, for more details see sklearn.cluster.MiniBatchKMeans
+    nfolds: number of clusters, for more details see 
+        sklearn.cluster.MiniBatchKMeans
 
-    init: initial cluster centers, for more details see sklearn.cluster.MiniBatchKMeans
+    init: initial cluster centers, for more details see 
+        sklearn.cluster.MiniBatchKMeans
 
     Returns
     ----------
-    labels: for each datapoint, the label of which cluster it belongs to, for more details see sklearn.cluster.MiniBatchKMeans
+    labels: for each datapoint, the label of which cluster it belongs to, for 
+        more details see sklearn.cluster.MiniBatchKMeans
     """
-    labels = MiniBatchKMeans(n_clusters=nfolds, verbose=0, batch_size=1000, random_state=0).fit_predict(data)
+    labels = MiniBatchKMeans(n_clusters=nfolds, verbose=0, batch_size=1000, 
+                             random_state=0).fit_predict(data)
     return labels
 
 def dbscan_clustering(data, nfolds):
     """
-    Cluster data into clusters with sklearn.cluster.OPTICS (non-linear clustering)
+    Cluster data into clusters with sklearn.cluster.OPTICS 
+    (non-linear clustering)
 
     Parameters
     ----------
@@ -78,7 +86,8 @@ def dbscan_clustering(data, nfolds):
 
     Returns
     ----------
-    labels: for each datapoint, the label of which cluster it belongs to, for more details see sklearn.cluster.OPTICS
+    labels: for each datapoint, the label of which cluster it belongs to, for 
+        more details see sklearn.cluster.OPTICS
     """
     clustering = OPTICS(max_eps=1, cluster_method='dbscan').fit(data)
     return clustering.labels_
@@ -93,7 +102,9 @@ if __name__ == '__main__':
     # read feature table
     data = xr.open_dataset('/path/to/gappy/dataset')
     mask = xr.open_dataset('/path/to/mask/dataset')
-    data = data['data'] # netcdf can only save datasets, we use only dataarrays because of more convenient indexing options
+    # netcdf can only save datasets, we use only dataarrays because 
+    # of more convenient indexing options
+    data = data['data'] 
     mask = mask['data']
     
     # create clusters and save
