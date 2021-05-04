@@ -107,22 +107,3 @@ def remove_ocean_points(data, landmask):
     landlat, landlon = np.where(landmask)
     return data.isel(longitude=xr.DataArray(landlon, dims='landpoints'), 
                      latitude=xr.DataArray(landlat, dims='landpoints'))
-
-
-if __name__ == '__main__':
-    
-    data = xr.open_dataset('/path/to/gappy/dataset')
-    log_fracmis(data, 'after reading file')
-
-    mask = xu.isnan(data) # create mask of missing values
-
-    data = gapfill_interpolation(data) # initial gapfill all missing values with interpolation
-    log_fracmis(data, 'after interpolation') # should be zero
-
-    # optional: remove ocean points for reducing file size
-    landmask = xr.open_dataset('/path/to/landmask') # needs dims 'latitude' and 'longitude'
-    data = remove_ocean_points(data, landmask)
-    mask = remove_ocean_points(mask, landmask)
-
-    # data.to_netcdf ...
-    # mask.to_netcdf ...

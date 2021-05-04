@@ -26,21 +26,3 @@ def nbnanmean(values_ptr, len_values, result, data):
     if i != 0:
         result[0] = tmp / max(i,1)
     return 1
-
-if __name__ == '__main__':
-    data = np.arange(25.).reshape(5,5)
-    data[np.random.rand(*data.shape) < 0.1] = np.nan
-
-    footprint = np.full((3,3), 1)
-    footprint[1,1] = 0
-
-    # original slow scipy version
-    from scipy.ndimage.filters import generic_filter
-    res = generic_filter(data, np.nanmean, footprint=footprint)
-    print(res)
-
-    # fast numba version
-    from scipy import LowLevelCallable
-    res = generic_filter(data, LowLevelCallable(nbnanmean.ctypes), 
-                         footprint=footprint)
-    print(res)

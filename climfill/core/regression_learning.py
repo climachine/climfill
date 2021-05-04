@@ -288,27 +288,3 @@ class Imputation:
 
             else:
                 self.iter_below = 0
-
-if __name__ == '__main__':
-    from sklearn.ensemble import RandomForestRegressor
-    import xarray as xr
-    import numpy as np
-
-    databatch = xr.open_dataset('/path/to/gappy/data/cluster')
-    maskbatch = xr.open_dataset('/path/to/mask/data/cluster')
-
-    variables = ['temperature', 'precipitation', 'test', 'test2']
-    rf_settings = {'n_estimators': 100,
-                  'min_samples_leaf': 2,
-                  'max_features': 0.5, 
-                  'max_samples': 0.5}
-    regr_dict = {variable: RandomForestRegressor(**rf_settings) 
-                 for variable in variables}
-    varnames = [varname for varname, regr in regr_dict.items()] 
-    maxiter = 10
-
-    impute = Imputation(maxiter=maxiter)
-    imputed_data, fitted_regr_dict = impute.impute(databatch, 
-                                                   maskbatch, regr_dict)
-
-    # imputed_data.to_netcdf ...

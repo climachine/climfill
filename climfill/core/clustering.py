@@ -91,30 +91,3 @@ def dbscan_clustering(data, nfolds):
     """
     clustering = OPTICS(max_eps=1, cluster_method='dbscan').fit(data)
     return clustering.labels_
-
-if __name__ == '__main__':
-
-    # method settings
-    epochs = np.arange(50,150,1)
-    random.seed(0)
-    epochs = random.choices(epochs, k=3) 
-
-    # read feature table
-    data = xr.open_dataset('/path/to/gappy/dataset')
-    mask = xr.open_dataset('/path/to/mask/dataset')
-    # netcdf can only save datasets, we use only dataarrays because 
-    # of more convenient indexing options
-    data = data['data'] 
-    mask = mask['data']
-    
-    # create clusters and save
-    for e in epochs:
-        logging.info(f'start epoch {e}...')
-        labels = kmeans_clustering(data, nfolds=e)
-        for f in range(e):
-            logging.info(f'start fold {f}...')
-            databatch = data[labels == f,:]
-            maskbatch = mask[labels == f,:]
-
-            # databatch.to_netcdf ...
-            # maskbatch.to_netcdf ...
