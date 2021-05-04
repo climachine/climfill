@@ -18,12 +18,15 @@ in environmentally similar points. At the end of the file, an
 example workflow is shown.
 """
 
-# parameter import
-from sklearn.cluster import MiniBatchKMeans, OPTICS
-import numpy as np
-import random
-import xarray as xr
 import logging
+import random
+
+import numpy as np
+import xarray as xr
+
+# parameter import
+from sklearn.cluster import OPTICS, MiniBatchKMeans
+
 logging.basicConfig(format='%(asctime)s - %(message)s', 
                     datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 

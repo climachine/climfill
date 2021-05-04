@@ -18,9 +18,11 @@ missing value in a dataset by taking into account the multivariate
 dependence structure of the data.
 """
 
-import numpy as np
 import copy
+
+import numpy as np
 from numpy import Inf
+
 
 class Imputation: 
     """

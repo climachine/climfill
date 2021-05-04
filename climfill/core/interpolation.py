@@ -19,13 +19,16 @@ with the spatiotemporal mean of its surrounding points
 outside the area of interest (for example, ocean) from the dataset.
 """
 
+import logging
+
 # imports
 import numpy as np
 import xarray.ufuncs as xu
-from scipy.ndimage.filters import generic_filter
-from .numba_nanmean import nbnanmean 
 from scipy import LowLevelCallable
-import logging
+from scipy.ndimage.filters import generic_filter
+
+from .numba_nanmean import nbnanmean
+
 logging.basicConfig(format='%(asctime)s - %(message)s', 
                     datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 

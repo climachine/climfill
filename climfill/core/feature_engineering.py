@@ -19,15 +19,19 @@ to add embedded features that describe slowly changing, important
 processes in your dataset.
 """
 
+import logging
+
 # imports
 import sys
+
 import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
-import logging
+
 logging.basicConfig(format='%(asctime)s - %(message)s', 
                     datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
 from scipy.ndimage.filters import generic_filter
+
 
 def log_fracmis(data, logtext=''):
     frac_mis = (np.isnan(data).sum() / data.size).values

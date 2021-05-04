@@ -7,9 +7,9 @@ ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
 """
 
 import numpy as np
-from numba import cfunc, carray
-from numba.types import intc, intp, float64, voidptr
-from numba.types import CPointer
+from numba import carray, cfunc
+from numba.types import CPointer, float64, intc, intp, voidptr
+
 
 # mean of footprint as I need it
 @cfunc(intc(CPointer(float64), intp,

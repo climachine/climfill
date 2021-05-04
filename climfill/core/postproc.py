@@ -18,17 +18,21 @@ back together from the individual clusters and datasets and bring it
 back to its lat lon time shape.
 """
 
-import sys
-import glob
-import xarray as xr
-import logging
 import argparse
+import glob
+import logging
+import sys
+
+import xarray as xr
+
 logging.basicConfig(format='%(asctime)s - %(message)s', 
                     datefmt='%d-%b-%y %H:%M:%S', level=logging.DEBUG)
-from namelist import largefilepath, varnames
 import random
+
 import numpy as np
 import xarray.ufuncs as xu
+from namelist import largefilepath, varnames
+
 
 def unstack(data):
     return data.set_index(datapoints=('time','landpoints'))
