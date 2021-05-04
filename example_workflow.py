@@ -21,22 +21,21 @@ dataset.
 import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
-
-from climfill.feature_engineering import create_precip_binary
-from climfill.interpolation import (
-    gapfill_interpolation,
-    remove_ocean_points,
-    logscale_precip,
-    create_lat_lon_features,
-    create_time_feature,
-    creade_embedded_features,
-    stack_constant_maps,
-    normalise,
-    stack,
-)
 from sklearn.ensemble import RandomForestRegressor
 
-from climfill.clusterings import kmeans_clustering
+from climfill.clustering import kmeans_clustering
+from climfill.feature_engineering import create_precip_binary
+from climfill.interpolation import (
+    creade_embedded_features,
+    create_lat_lon_features,
+    create_time_feature,
+    gapfill_interpolation,
+    logscale_precip,
+    normalise,
+    remove_ocean_points,
+    stack,
+    stack_constant_maps,
+)
 from climfill.postproc import exp_precip, renormalise, unstack
 from climfill.regression_learning import Imputation
 
@@ -84,10 +83,10 @@ data["timedat"] = time_arr
 data = data.to_array()
 
 # (2): add time lags as predictors
-lag_7ff = create_embedded_features(data, s=0, l=7)
-lag_7 = create_embedded_features(data, s=7, l=0)
-lag_30 = create_embedded_features(data, s=30, l=7)
-lag_180 = create_embedded_features(data, s=180, l=30)
+lag_7ff = create_embedded_features(data, window_size=0, lag=7)
+lag_7 = create_embedded_features(data, window_size=7, lag=0)
+lag_30 = create_embedded_features(data, window_size=30, lag=7)
+lag_180 = create_embedded_features(data, window_size=180, lag=30)
 data = xr.concat(
     [data, lag_7ff, lag_7, lag_30, lag_180], dim="variable", join="left", fill_value=0
 )
@@ -112,7 +111,7 @@ epochs = random.choices(epochs, k=3)
 
 # (3) create clusters
 for e in epochs:
-    logging.info(f"start epoch {e}...")
+    logging.info(f'start epoch {e}...')
     labels = kmeans_clustering(data, nfolds=e)
     for f in range(e):
         logging.info(f"start fold {f}...")

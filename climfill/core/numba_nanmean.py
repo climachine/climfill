@@ -1,8 +1,8 @@
 """
 this file contains a fast, cython-based version for the spatiotemporal
-filtering of the data. 
+filtering of the data.
 
-Adapted after source: 
+Adapted after source:
 ilovesymposia.com/2017/03/12/scipys-new-lowlevelcallable-is-a-game-changer/
 """
 

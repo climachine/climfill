@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 This file gives you the function for filling any missing points
-with the spatiotemporal mean of its surrounding points 
+with the spatiotemporal mean of its surrounding points
 (interpolation step) and a convenience function for removing points
 outside the area of interest (for example, ocean) from the dataset.
 """

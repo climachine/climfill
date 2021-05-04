@@ -14,25 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 This file gives you convenience functions for concatenating the data
-back together from the individual clusters and datasets and bring it 
+back together from the individual clusters and datasets and bring it
 back to its lat lon time shape.
 """
 
-import argparse
-import glob
-import logging
-import sys
-
-import xarray as xr
-
-logging.basicConfig(
-    format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S", level=logging.DEBUG
-)
-import random
-
 import numpy as np
 import xarray.ufuncs as xu
-from namelist import largefilepath, varnames
 
 
 def unstack(data):
@@ -52,30 +39,3 @@ def exp_precip(data):
     # all nan get zero precip
     data.loc["tp"] = data.loc["tp"].where(~np.isnan(data.loc["tp"]), 0)
     return data
-
-
-if __name__ == "__main__":
-
-    epochs = np.arange(50, 150, 1)
-    random.seed(0)
-    epochs = random.choices(epochs, k=3)
-
-    for e in epochs:
-        filenames = glob.glob("path/to/files/of/this/epoch")
-        data_epoch = xr.open_mfdataset(
-            filenames, combine="nested", concat_dim="datapoints"
-        ).load()
-
-        data_epoch = data_epoch["data"]
-        data_epoch = unstack(data_epoch)
-        data_epoch = data_epoch.sel(variable=variables)
-
-        data_imputed = data_imputed + data_epoch
-
-    data_imputed = data_imputed / len(epochs)
-
-    # unstack
-    data_imputed = unstack(data_imputed)
-
-    # renormalise
-    data_imputed = renormalise(data_imputed, datamean, datastd)

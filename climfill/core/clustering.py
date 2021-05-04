@@ -14,22 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 This file gives you convenience functions for clustering the data
-in environmentally similar points. At the end of the file, an 
+in environmentally similar points. At the end of the file, an
 example workflow is shown.
 """
 
-import logging
-import random
-
 import numpy as np
-import xarray as xr
 
-# parameter import
 from sklearn.cluster import OPTICS, MiniBatchKMeans
-
-logging.basicConfig(
-    format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S", level=logging.DEBUG
-)
 
 
 def random_clustering(data, nfolds):

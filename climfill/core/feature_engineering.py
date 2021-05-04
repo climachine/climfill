@@ -136,7 +136,7 @@ def create_time_feature(data):
     return time_arr
 
 
-def create_embedded_features(data, s, l, varnames):
+def create_embedded_features(data, window_size, lag, varnames):
     """
     for each variable, create embedded features of data with mean over window
         size s and time lag l
@@ -145,8 +145,8 @@ def create_embedded_features(data, s, l, varnames):
     ----------
     data: xarray dataarray, with dimensions including variable, time
     varnames: list of all variables for calculating this embedded feature
-    s: int, window size in days
-    l: int, lag of window from today in days
+    window_size: int, window size in days
+    lag: int, lag of window from today in days
 
     Returns
     ----------
@@ -156,17 +156,19 @@ def create_embedded_features(data, s, l, varnames):
     # rolling window average
     tmp = (
         data.sel(variable=varnames)
-        .rolling(time=l - s, center=False, min_periods=1)
+        .rolling(time=lag - window_size, center=False, min_periods=1)
         .mean()
     )
 
     # overwrite time stamp to current day
     tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(l, "D") for time in tmp.coords["time"].values]
+        time=[time + np.timedelta64(lag, "D")
+              for time in tmp.coords["time"].values]
     )
 
     # rename feature to not overwrite variable
-    tmp = tmp.assign_coords(variable=[f"{var}lag_{s}ff" for var in varnames])
+    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff"
+                                      for var in varnames])
 
     # fill missing values in lagged features at beginning or end of time series
     varmeans = tmp.mean(dim=("time"))

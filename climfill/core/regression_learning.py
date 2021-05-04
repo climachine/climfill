@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-This file gives you the class for updating an initial guess of a 
+This file gives you the class for updating an initial guess of a
 missing value in a dataset by taking into account the multivariate
 dependence structure of the data.
 """
@@ -109,11 +109,11 @@ class Imputation:
         """
         Internal function to handle iteration log
         """
-        logging.info(
+        logging.info((
             f"{logtrunc} new delta: {np.round(self.delta_n, 9)}",
             f"diff: {np.round(self.delta_n_old - self.delta_n, 9)}",
             f"niter: {self.iter} niterbelow: {self.iter_below}",
-        )
+        ))
 
     def impute(self, data, mask, regr_dict, kwargs={}, verbose=1, logtrunc=""):
         """
