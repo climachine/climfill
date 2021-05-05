@@ -19,7 +19,6 @@ example workflow is shown.
 """
 
 import numpy as np
-
 from sklearn.cluster import OPTICS, MiniBatchKMeans
 
 

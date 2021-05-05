@@ -162,13 +162,11 @@ def create_embedded_features(data, window_size, lag, varnames):
 
     # overwrite time stamp to current day
     tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(lag, "D")
-              for time in tmp.coords["time"].values]
+        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values]
     )
 
     # rename feature to not overwrite variable
-    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff"
-                                      for var in varnames])
+    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" for var in varnames])
 
     # fill missing values in lagged features at beginning or end of time series
     varmeans = tmp.mean(dim=("time"))

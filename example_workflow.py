@@ -111,7 +111,7 @@ epochs = random.choices(epochs, k=3)
 
 # (3) create clusters
 for e in epochs:
-    logging.info(f'start epoch {e}...')
+    logging.info(f"start epoch {e}...")
     labels = kmeans_clustering(data, nfolds=e)
     for f in range(e):
         logging.info(f"start fold {f}...")
