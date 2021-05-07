@@ -30,5 +30,5 @@ with open("climfill/version.py") as f:
             "Topic :: Scientific/Engineering :: Environmental Science",
             "Topic :: Scientific/Engineering :: Hydrology",
         ],
-        python_requires="3.6",  # >=??
+        python_requires=">=3.6",  # >=??
     )
