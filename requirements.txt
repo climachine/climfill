@@ -1,4 +1,5 @@
 numpy
-sklearn
+scikit-learn
+bottleneck
 xarray
 scipy
