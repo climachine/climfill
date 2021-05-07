@@ -38,6 +38,7 @@ from climfill.interpolation import (
 )
 from climfill.postproc import exp_precip, renormalise, unstack
 from climfill.regression_learning import Imputation
+from create_test_data import create_test_data
 
 # load data
 data = xr.open_dataset("/path/to/gappy/dataset")
