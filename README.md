@@ -6,10 +6,10 @@ CLIMFILL consists of four steps:
 
 1. Interpolation: initially, the missing values are filled by an interpolation using spatiotemporally close points. In [1], this is done by running a 5x5x5 3-dimensional convolutional filter for each variable. However, any interpolation method (bilinear, cubic, kriging, ...) can be used here.
 2. Feature engineering: In the spirit of data science, in the second step descriptive features are created depending on the individual needs of the data. For example, time, and space, expressed in latitude and longitude, can be features. Furthermore, running means of important variables can be features to inform about slowly changing processes. Helper functions to create such features are provided.
-3. Clustering: Before the last step, the data is divided into environmentally similar points accross space and time. Any classification method can be used here, in the package KMeans, OPTICS and random clustering are supported.
-4. Regression learning: the initial gap-fill estimates from step 1 are iteratively updated by learning and applying any regression function to the data using a method adapted from the MissForest Algorithm [2]. 
+3. Clustering: Before the last step, the data is divided into environmentally similar points accross space and time. Any classification method can be used here, in the package `<sklearn.cluster.KMeans>`, `<sklearn.cluster.OPTICS>` and random clustering are supported.
+4. Regression learning: the initial gap-fill estimates from step 1 are iteratively updated by learning and applying any regression function to the data using a method adapted from the MissForest Algorithm [2]. In the `<example_workflow.py>`, `<sklearn.ensemble.RandomForestRegressor>` is used.
 
-The necessary functions are in the respective scripts. An example workflow going through all four steps is shown in example_workflow.py
+The necessary functions are in the respective scripts. An example workflow going through all four steps is shown in `<example_workflow.py>`.
 
 ## Installation
 
