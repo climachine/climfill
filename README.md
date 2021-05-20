@@ -13,7 +13,7 @@ The necessary functions are in the respective scripts. An example workflow going
 
 ## Installation
 
-pip install git+https://github.com/climachine/climfill
+`<pip install git+https://github.com/climachine/climfill>`
 
 ## Documentation
 For a full documentation, check [1]. Furthermore, each function and class has a doc string.
