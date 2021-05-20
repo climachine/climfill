@@ -68,6 +68,7 @@ def gapfill_interpolation(data, n=5):
     """
 
     # infill spatiotemporal mean
+    log_fracmis(data, "before filtering")
     footprint = np.ones((1, n, n, n))
     tmp = generic_filter(data, mean_fct, footprint=footprint, mode="nearest")
     data = data.fillna(tmp)
