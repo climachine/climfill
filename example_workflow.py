@@ -82,7 +82,6 @@ constant_maps = constant_maps.to_array()
 
 # optional: remove ocean points for reducing file size
 # landmask needs dimensions with names 'latitude' and 'longitude'
-# landmask = xr.open_dataset("/path/to/landmask")
 data = remove_ocean_points(data, landmask)
 mask = remove_ocean_points(mask, landmask)
 constant_maps = remove_ocean_points(constant_maps, landmask)
@@ -155,20 +154,29 @@ for e, epoch in enumerate(epochs):
         maxiter = 1
 
         impute = Imputation(maxiter=maxiter)
+        # note that the following step takes quite long because the
+        # toy dataset consists of random numbers and the RandomForest
+        # has quite a hard time fitting this. Will be much faster with
+        # correlated non-white noise data.
         databatch_imputed, regr_dict = impute.impute(
-            databatch, maskbatch, regr_dict, verbose=1
+            databatch, maskbatch, regr_dict, verbose=2
         )
 
         data_imputed[e, idxs, :] = databatch_imputed
 
 # take mean through all epochs
+print("take the mean from all clusters ...")
 data_imputed = data_imputed.mean(dim="epochs")
 
 # unstack
+print("unstack ...")
 data_imputed = unstack(data_imputed)
 
 # renormalise
+print("renormalise and exp precip ...")
 data_imputed = renormalise(data_imputed, datamean, datastd)
+data_imputed = exp_precip(data_imputed, varname="precipitation")
 
 # save result
+print("DONE")
 # data_imputed.to_netcdf(...)

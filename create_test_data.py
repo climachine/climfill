@@ -23,7 +23,7 @@ def create_gappy_test_data():
         dims=["variable", "time", "latitude", "longitude"],
     )
 
-    frac_missing = 0.5
+    frac_missing = 0.1
     n_samples = data.size * frac_missing
     idxs = sample_without_replacement(data.size, n_samples)
     data.values.flat[idxs] = np.nan
@@ -33,7 +33,6 @@ def create_gappy_test_data():
 
 def create_constant_test_data():
 
-    year = "2003"
     lat = np.arange(-90, 90, 1)
     lon = np.arange(-180, 180, 1)
     variables = ["topography", "land cover"]
@@ -48,7 +47,6 @@ def create_constant_test_data():
 
 def create_landmask():  # TODO from regionmask
 
-    year = "2003"
     lat = np.arange(-90, 90, 1)
     lon = np.arange(-180, 180, 1)
 

@@ -31,11 +31,11 @@ def renormalise(data, datamean, datastd):
     return data
 
 
-def exp_precip(data):
+def exp_precip(data, varname="precipitation"):
     # all -20 get nan
-    data.loc["tp"] = data.loc["tp"].where(data.loc["tp"] > -19, np.nan)
+    data.loc[varname] = data.loc[varname].where(data.loc[varname] > -19, np.nan)
     # all nan stay nan
-    data.loc["tp"] = xu.exp(data.loc["tp"])
+    data.loc[varname] = xu.exp(data.loc[varname])
     # all nan get zero precip
-    data.loc["tp"] = data.loc["tp"].where(~np.isnan(data.loc["tp"]), 0)
+    data.loc[varname] = data.loc[varname].where(~np.isnan(data.loc[varname]), 0)
     return data

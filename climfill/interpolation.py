@@ -19,19 +19,12 @@ with the spatiotemporal mean of its surrounding points
 outside the area of interest (for example, ocean) from the dataset.
 """
 
-import logging
-
 import numpy as np
 import xarray as xr
-import xarray.ufuncs as xu
 from scipy import LowLevelCallable
 from scipy.ndimage.filters import generic_filter
 
 from .numba_nanmean import nbnanmean
-
-logging.basicConfig(
-    format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S", level=logging.DEBUG
-)
 
 # fast spatiotemporal mean with cython
 mean_fct = LowLevelCallable(nbnanmean.ctypes)
@@ -39,7 +32,7 @@ mean_fct = LowLevelCallable(nbnanmean.ctypes)
 
 def log_fracmis(data, logtext=""):
     frac_mis = (np.isnan(data).sum() / data.size).values
-    logging.info(f"fraction missing {logtext}: {frac_mis}")
+    print(f"fraction missing {logtext}: {frac_mis}")
 
 
 def gapfill_interpolation(data, n=5):

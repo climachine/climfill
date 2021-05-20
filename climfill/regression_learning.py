@@ -187,7 +187,7 @@ class Imputation:
 
                 # divide into predictor and predictands
                 if verbose >= 2:
-                    logging.info(
+                    print(
                         f"{logtrunc} {varname}", "divide into predictor and predictands"
                     )
                 y = data.loc[:, varname]
@@ -202,7 +202,7 @@ class Imputation:
 
                 # divide into missing and not missing values
                 if verbose >= 2:
-                    logging.info(f"{logtrunc} divide into missing", "and not missing")
+                    print(f"{logtrunc} divide into missing", "and not missing")
                 y_mis = y[y_mask]
                 y_obs = y[~y_mask]
                 del y
@@ -217,7 +217,7 @@ class Imputation:
                 # check if missing values present in subset
                 if y_mis.size == 0:
                     if verbose >= 0:
-                        logging.info(
+                        print(
                             f"{logtrunc} variable {varname}",
                             "does not have missing values. skip ...",
                         )
@@ -225,7 +225,7 @@ class Imputation:
 
                 # check if enough observations (>2) for fitting present
                 if y_obs.size < 2:
-                    logging.info(
+                    print(
                         f"{logtrunc} WARNING variable {varname}",
                         "does not have (enough) observed values. skip ...",
                     )
@@ -233,7 +233,7 @@ class Imputation:
 
                 # fit regression
                 if verbose >= 2:
-                    logging.info(f"{logtrunc} fit to avail obs")
+                    print(f"{logtrunc} fit to avail obs")
                 if kwargs is not None:
                     Regr.fit(X_obs, y_obs, **kwargs)
                 else:
@@ -242,15 +242,15 @@ class Imputation:
 
                 # predict
                 if verbose >= 2:
-                    logging.info(f"{logtrunc} predict missing values")
+                    print(f"{logtrunc} predict missing values")
                 try:
                     y_predict = Regr.predict(X_mis)
-                except RuntimeWarning as e:
+                except RuntimeWarning:
                     raise ValueError(f"{logtrunc} {len(Regr.estimators_)}")
 
                 # update estimates for missing values
                 if verbose >= 2:
-                    logging.info(f"{logtrunc} update estimates", "for missing values")
+                    print(f"{logtrunc} update estimates", "for missing values")
                 v = np.where(data.coords["variable"] == varname)[0][0]
                 # print(y_predict)
                 # print(data[y_mask,v])
