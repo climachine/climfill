@@ -88,11 +88,7 @@ def normalise(data):
 
 def stack(data):
     # add select variable to remove it in gapfill?
-    return (
-        data.stack(datapoints=("time", "landpoints"))
-        .reset_index("datapoints")
-        .T
-    )
+    return data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 
 def create_lat_lon_features(constant_maps):
@@ -108,8 +104,7 @@ def create_lat_lon_features(constant_maps):
     latitude_arr
     longitude_arr
     """
-    londata, latdata = np.meshgrid(constant_maps.longitude, 
-                                   constant_maps.latitude)
+    londata, latdata = np.meshgrid(constant_maps.longitude, constant_maps.latitude)
     latitude_arr = (("latitude", "longitude"), latdata)
     longitude_arr = (("latitude", "longitude"), londata)
     return latitude_arr, longitude_arr
@@ -161,13 +156,11 @@ def create_embedded_features(data, varnames, window_size, lag):
 
     # overwrite time stamp to current day
     tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(lag, "D") 
-              for time in tmp.coords["time"].values]
+        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values]
     )
 
     # rename feature to not overwrite variable
-    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" 
-                                      for var in varnames])
+    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" for var in varnames])
 
     # fill missing values in lagged features at beginning or end of time series
     varmeans = tmp.mean(dim=("time"))
@@ -178,7 +171,7 @@ def create_embedded_features(data, varnames, window_size, lag):
 
 def stack_constant_maps(data, constant_maps):
     ntimesteps = data.coords["time"].size
-    constant_maps = constant_maps.expand_dims({'time': ntimesteps}, axis=1)
-    #constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
+    constant_maps = constant_maps.expand_dims({"time": ntimesteps}, axis=1)
+    # constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
     constant_maps["time"] = data["time"]
     return constant_maps
