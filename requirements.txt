@@ -1,6 +1,5 @@
 numpy
 scikit-learn
-bottleneck
 numba
 xarray
 scipy
