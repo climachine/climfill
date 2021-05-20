@@ -21,8 +21,8 @@ outside the area of interest (for example, ocean) from the dataset.
 
 import logging
 
-# imports
 import numpy as np
+import xarray as xr
 import xarray.ufuncs as xu
 from scipy import LowLevelCallable
 from scipy.ndimage.filters import generic_filter
@@ -74,7 +74,7 @@ def gapfill_interpolation(data, n=5):
     log_fracmis(data, "after filtering")
 
     # infill dayofyear mean
-    seasonality = dataxr_lost.groupby("time.dayofyear").mean(dim="time")
+    seasonality = data.groupby("time.dayofyear").mean(dim="time")
     data = data.groupby("time.dayofyear").fillna(seasonality).drop("dayofyear")
     log_fracmis(data, "after seasonality")
 

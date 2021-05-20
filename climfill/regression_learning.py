@@ -109,7 +109,7 @@ class Imputation:
         """
         Internal function to handle iteration log
         """
-        logging.info(
+        print(
             (
                 f"{logtrunc} new delta: {np.round(self.delta_n, 9)}",
                 f"diff: {np.round(self.delta_n_old - self.delta_n, 9)}",
@@ -169,7 +169,6 @@ class Imputation:
         # mutated, see https://stackoverflow.com/questions/52268262/does-
         # pythons-dict-items-always-return-the-same-order
         varnames = [varname for varname, regr in regr_dict.items()]
-        print(varnames)
 
         # while no convergence, loop over features and impute iteratively
         while True:

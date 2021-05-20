@@ -21,7 +21,6 @@ processes in your dataset.
 
 import logging
 
-# imports
 import sys
 
 import numpy as np
@@ -39,7 +38,7 @@ def log_fracmis(data, logtext=""):
     logging.info(f"fraction missing {logtext}: {frac_mis}")
 
 
-def logscale_precip(data, varname="tp"):
+def logscale_precip(data, varname="precipitation"):
     """
     log-scale variable "varname" in data
 
@@ -61,7 +60,7 @@ def logscale_precip(data, varname="tp"):
     return data
 
 
-def create_precip_binary(data, varname="tp"):
+def create_precip_binary(data, varname="precipitation"):
     ip = (data.loc[varname] < 0.00001) * 1
     ip = ip.rename("ip")
     return ip
@@ -93,7 +92,7 @@ def stack(data):
     return (
         data.stack(datapoints=("time", "landpoints"))
         .reset_index("datapoints")
-        .T.to_dataset(name="data")
+        .T
     )
 
 
@@ -110,7 +109,8 @@ def create_lat_lon_features(constant_maps):
     latitude_arr
     longitude_arr
     """
-    londata, latdata = np.meshgrid(constant_maps.longitude, constant_maps.latitude)
+    londata, latdata = np.meshgrid(constant_maps.longitude, 
+                                   constant_maps.latitude)
     latitude_arr = (("latitude", "longitude"), latdata)
     longitude_arr = (("latitude", "longitude"), londata)
     return latitude_arr, longitude_arr
@@ -131,12 +131,12 @@ def create_time_feature(data):
     """
     _, ntimesteps, nlandpts = data.shape
     timedat = np.arange(ntimesteps)
-    timedat = np.tile(timedat, nlandpoints).reshape(nlandpts, *timedat.shape).T
+    timedat = np.tile(timedat, nlandpts).reshape(nlandpts, *timedat.shape).T
     time_arr = (("time", "landpoints"), timedat)
     return time_arr
 
 
-def create_embedded_features(data, window_size, lag, varnames):
+def create_embedded_features(data, varnames, window_size, lag):
     """
     for each variable, create embedded features of data with mean over window
         size s and time lag l
@@ -156,17 +156,19 @@ def create_embedded_features(data, window_size, lag, varnames):
     # rolling window average
     tmp = (
         data.sel(variable=varnames)
-        .rolling(time=lag - window_size, center=False, min_periods=1)
+        .rolling(time=np.abs(lag - window_size), center=False, min_periods=1)
         .mean()
     )
 
     # overwrite time stamp to current day
     tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values]
+        time=[time + np.timedelta64(lag, "D") 
+              for time in tmp.coords["time"].values]
     )
 
     # rename feature to not overwrite variable
-    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" for var in varnames])
+    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" 
+                                      for var in varnames])
 
     # fill missing values in lagged features at beginning or end of time series
     varmeans = tmp.mean(dim=("time"))
@@ -177,6 +179,7 @@ def create_embedded_features(data, window_size, lag, varnames):
 
 def stack_constant_maps(data, constant_maps):
     ntimesteps = data.coords["time"].size
-    constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
-    constant_maps["time"] = data["time"]  # needs timestep for concat to work
+    constant_maps = constant_maps.expand_dims({'time': ntimesteps}, axis=1)
+    #constant_maps = np.repeat(constant_maps, ntimesteps, axis=1)
+    constant_maps["time"] = data["time"]
     return constant_maps
