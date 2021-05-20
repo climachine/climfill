@@ -27,5 +27,5 @@ The work is distributed under the Apache-2.0 License.
 
 ## References
 [1] Bessenbacher, V., Gudmundsson, L. and Seneviratne, S.I.: CLIMFILL: A Framework for Intelligently Gap-filling Earth Observations (submitted to Geoscientific Model Development on 20th May 2021) 
-[2] and references therein, especially
-- Stekhoven, D. J. and Buehlmann, P. (2012): MissForest -- non-parametric missing value imputation for mixed-type data. Bioinformatics, 28, 1, 112-118.
+and references therein, especially
+[2] Stekhoven, D. J. and Buehlmann, P. (2012): MissForest -- non-parametric missing value imputation for mixed-type data. Bioinformatics, 28, 1, 112-118.
