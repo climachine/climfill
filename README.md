@@ -1,5 +1,7 @@
 # CLIMFILL : A Framework for Intelligently Gap-filling Earth Observations
 
+![Title Image](title_image.png)
+
 CLIMFILL fills gaps in gridded geoscientific observational data by taking into account both spatiotemporally neighboring points and multivariate dependencies. It takes a multivariate dataset with any number and pattern of missing values per variable and returns the dataset with all missing points replaced by estimates. CLIMFILL is a framework, not a clearly defined method. Therefore, for each of the gap-filling steps taken, the user needs to define a method that suits their particular needs best. Some of the most common functions are however already part of the package. For a full description of the framework, see [1].
 
 CLIMFILL consists of four steps:
