@@ -117,23 +117,30 @@ mask = stack(mask)
 
 # (3): clustering settings
 n_epochs = 3
-epochs = np.arange(50, 150, 1)
+epochs = np.arange(5)
 random.seed(0)
-epochs = random.choices(epochs, n_epochs=3)
+epochs = random.choices(epochs, k=n_epochs)
 
 # (3) create clusters
 print('step 3: clustering ...')
 data_imputed = xr.full_like(data, np.nan)
 data_imputed = data_imputed.expand_dims({'epochs': n_epochs}, axis=0)
+data_imputed = data_imputed.copy(deep=True) # xr.full_like creates view
 
-for e in epochs:
-    labels = kmeans_clustering(data, nfolds=e)
-    for f in range(e):
+for e, epoch in enumerate(epochs):
+    
+    # clustering data for this epoch
+    labels = kmeans_clustering(data, nfolds=epoch)
+
+    for f in range(epoch):
+
+        # select data chunk in cluster
         databatch = data[labels == f, :]
         maskbatch = mask[labels == f, :]
+        idxs = np.where(labels == f)[0]
 
         # step 4: regression learning
-        print(f'step 4: regression learning for epoch {e} cluster {f} ...')
+        print(f'step 4: regression learning for epoch {epoch} cluster {f} ...')
         rf_settings = {
             "n_estimators": 100,
             "min_samples_leaf": 2,
@@ -146,31 +153,16 @@ for e in epochs:
                       for variable in varnames
         }
 
-        maxiter = 10
+        maxiter = 1
 
         impute = Imputation(maxiter=maxiter)
-        data_imputed, regr_dict = impute.impute(databatch, maskbatch,
-                                                regr_dict, verbose=1)
+        databatch_imputed, regr_dict = impute.impute(databatch, maskbatch,
+                                                     regr_dict, verbose=1)
 
-        # data_imp.to_netcdf ...
+        data_imputed[e,idxs,:] = databatch_imputed
 
-# add cluster together again
-data_imputed = data.copy(deep=True)
-data_imputed = data_imputed.where(data_imputed == 0, 0)  # set all values zero
-
-for e in epochs:
-    filenames = glob.glob("path/to/files/of/this/epoch")
-    data_epoch = xr.open_mfdataset(
-        filenames, combine="nested", concat_dim="datapoints"
-    ).load()
-
-    data_epoch = data_epoch["data"]
-    data_epoch = unstack(data_epoch)
-    data_epoch = data_epoch.sel(variable=varnames)
-
-    data_imputed = data_imputed + data_epoch
-
-data_imputed = data_imputed / len(epochs)
+# take mean through all epochs
+data_imputed = data_imputed.mean(dim='epochs')
 
 # unstack
 data_imputed = unstack(data_imputed)
