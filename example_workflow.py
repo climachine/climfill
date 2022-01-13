@@ -23,160 +23,195 @@ import random
 import numpy as np
 import xarray as xr
 import xarray.ufuncs as xu
+import regionmask
 from sklearn.ensemble import RandomForestRegressor
 
-from climfill.clustering import kmeans_clustering
 from climfill.feature_engineering import (
-    create_embedded_features,
+    create_embedded_feature,
     create_lat_lon_features,
-    create_precip_binary,
     create_time_feature,
-    logscale_precip,
-    normalise,
-    stack,
     stack_constant_maps,
 )
-from climfill.interpolation import gapfill_interpolation, remove_ocean_points
-from climfill.postproc import exp_precip, renormalise, unstack
+from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
 from climfill.regression_learning import Imputation
 from create_test_data import (
     create_constant_test_data,
     create_gappy_test_data,
-    create_landmask,
 )
 
-# load data
+# load your data
 print("load data ...")
 data = create_gappy_test_data()
 constant_maps = create_constant_test_data()
-landmask = create_landmask()
+landmask = regionmask.defined_regions.natural_earth.land_110.mask(data.lon,data.lat)
+landmask = landmask.where(landmask!=0,1) # boolean mask: land is True, ocean is False 
+landmask = landmask.where(~np.isnan(landmask),0)
+landmask = landmask.astype(bool)
 
 # create mask of missing values
 print("create mask of missing values ...")
 mask = xu.isnan(data)
 
-# get list of variables
-print("get list of variables ...")
-varnames = data.coords["variable"].values
+## get list of variables
+#print("get list of variables ...")
+#varnames = data.coords["variable"].values
+#print(varnames)
 
 # step 1: interpolation
 print("step 1: initial interpolation ...")
-data = gapfill_interpolation(data)
+
+# step 1.1.: divide into monthly climatology and anomalies
+data_monthly = data.groupby('time.month').mean()
+data_anom = data.groupby('time.month') - data_monthly  
+
+# step 1.2: gapfill monthly data with thin-plate-spline interpolation
+rbf_kwargs = {'tp':    {'neighbors': 100, # cross-validate and consult Table A2 in publication
+                        'smoothing': 0.1, 
+                        'degree': 1},
+              'swvl1': {'neighbors': 100,
+                        'smoothing': 10, 
+                        'degree': 2}, 
+              'skt':   {'neighbors': 100,
+                        'smoothing': 0.1,
+                        'degree': 1},
+              'tws':   {'neighbors': 100,
+                        'smoothing': 0.1,
+                        'degree': 1}}
+data_monthly = gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs)
+
+# step 1.3: gapfill anomalies with kriging
+kriging_kwargs = {'tp':    {'constant_value': 0.01, # cross-validate and consult Table A2 in publication
+                            'length_scale': 1.0,
+                            'repeats': 10,
+                            'npoints': 100},
+                  'swvl1': {'constant_value': 100.0,
+                            'length_scale': 10.0,
+                            'repeats': 1,
+                            'npoints': 10},
+                  'skt':   {'constant_value': 100.0,
+                            'length_scale': 30.0,
+                            'repeats': 10,
+                            'npoints': 100},
+                  'tws':   {'constant_value': 0.1,
+                            'length_scale': 50.0,
+                            'repeats': 5,
+                            'npoints': 1000}}
+import warnings # DEBUG
+warnings.simplefilter('ignore')
+data_anom = gapfill_kriging(data_anom, landmask, kriging_kwargs)
+
+# step 1.4: add monthly climatology and anomalies back together
+data = data_anom.groupby('time.month') + data_monthly
+data = data.drop('month') # month not needed anymore
+
+# necessary if full days are missing: fill all remaining gaps with variable mean
+if np.isnan(data).sum() != 0: # if still missing values present
+    print('still missing values treatment')
+    variable_mean = data.mean(dim=("time", "lat", "lon"))
+    data = data.fillna(variable_mean)
 
 # step 2: feature engineering
 print("step 2: feature engineering ...")
 
-# (2): log-scale precipitation
-ip = create_precip_binary(data, varname="precipitation")
-data = data.to_dataset(dim="variable")
-data["ip"] = ip
-data = data.to_array()
-data = logscale_precip(data, varname="precipitation")
-
-# (2): add longitude and latitude as predictors
+# step 2.1  add longitude and latitude as predictors
 latitude_arr, longitude_arr = create_lat_lon_features(constant_maps)
 constant_maps = constant_maps.to_dataset(dim="variable")
 constant_maps["latdata"] = latitude_arr
 constant_maps["londata"] = longitude_arr
 constant_maps = constant_maps.to_array()
 
-# optional: remove ocean points for reducing file size
-# landmask needs dimensions with names 'latitude' and 'longitude'
-data = remove_ocean_points(data, landmask)
-mask = remove_ocean_points(mask, landmask)
-constant_maps = remove_ocean_points(constant_maps, landmask)
+# step 2.2. (optional): remove ocean points for reducing file size
+landlat, landlon = np.where(landmask)
+data = data.isel(lon=xr.DataArray(landlon, dims="landpoints"),
+                 lat=xr.DataArray(landlat, dims="landpoints"))
+mask = mask.isel(lon=xr.DataArray(landlon, dims="landpoints"),
+                 lat=xr.DataArray(landlat, dims="landpoints"))
+constant_maps = constant_maps.isel(lon=xr.DataArray(landlon, dims="landpoints"),
+                                   lat=xr.DataArray(landlat, dims="landpoints"))
 
-# (2): add time as predictor
+# step 2.3: add time as predictor
 time_arr = create_time_feature(data)
 data = data.to_dataset(dim="variable")
 data["timedat"] = time_arr
 data = data.to_array()
 
-# (2): add time lags as predictors
-lag_7ff = create_embedded_features(data, varnames, window_size=0, lag=7)
-lag_7 = create_embedded_features(data, varnames, window_size=7, lag=0)
-lag_30 = create_embedded_features(data, varnames, window_size=30, lag=7)
-lag_180 = create_embedded_features(data, varnames, window_size=180, lag=30)
+# step 2.4: add time lags as predictors
+lag_007b = create_embedded_feature(data.sel(variable=varnames), start=-7,   end=0, name='lag_7b')
+lag_030b = create_embedded_feature(data.sel(variable=varnames), start=-30,  end=-7, name='lag_30b')
+lag_180b = create_embedded_feature(data.sel(variable=varnames), start=-180, end=-30, name='lag_180b')
+lag_007f = create_embedded_feature(data.sel(variable=varnames), start=0,    end=7, name='lag_7f')
+lag_030f = create_embedded_feature(data.sel(variable=varnames), start=7,    end=30, name='lag_30f')
+lag_180f = create_embedded_feature(data.sel(variable=varnames), start=30,   end=180, name='lag_180f')
 data = xr.concat(
-    [data, lag_7ff, lag_7, lag_30, lag_180], dim="variable", join="left", fill_value=0
-)
+    [data, lag_007b, lag_030b, lag_180b, lag_007f, lag_030f, lag_180f], 
+    dim="variable", join="left", fill_value=0)
 
-# (2): concatenate constant maps and variables and features
+# fill still missing values at beginning of time series
+varmeans = dataxr.mean(dim=('time'))
+data = data.fillna(varmeans)
+
+# step 2.5: concatenate constant maps and variables and features
 constant_maps = stack_constant_maps(data, constant_maps)
 data = xr.concat([data, constant_maps], dim="variable")
 
-# intermediate step: prepare for regression learning
-data, datamean, datastd = normalise(data)
+# step 2.6: normalise data
+datamean = data.mean(dim=("time", "landpoints"))
+datastd = data.std(dim=("time", "landpoints"))
+data = (data - datamean) / datastd
 
-# stack into tabular data
-data = stack(data)
-mask = stack(mask)
+# step 2.7: stack into tabular data
+data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
+mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 # step 3: clustering
-
-# (3): clustering settings
-n_epochs = 3
-epochs = np.arange(5)
-random.seed(0)
-epochs = random.choices(epochs, k=n_epochs)
-
-# (3) create clusters
 print("step 3: clustering ...")
-data_imputed = xr.full_like(data, np.nan)
-data_imputed = data_imputed.expand_dims({"epochs": n_epochs}, axis=0)
-data_imputed = data_imputed.copy(deep=True)  # xr.full_like creates view
+data_imputed = xr.full_like(data.copy(deep=True), np.nan) # xr.full_like creates view
+n_clusters = 30
+labels = MiniBatchKMeans(n_clusters=n_clusters, verbose=0, batch_size=1000, random_state=0).fit_predict(data)
 
-for e, epoch in enumerate(epochs):
+# step 4: regression learning
+print(f"step 4: regression learning ...")
+for c in range(n_clusters):
 
-    # clustering data for this epoch
-    labels = kmeans_clustering(data, nfolds=epoch)
+    # step 4.1: select cluster
+    print(f"cluster {c} ...")
+    databatch = data[labels == c, :]
+    maskbatch = mask[labels == c, :]
+    idxs = np.where(labels == c)[0]
 
-    for f in range(epoch):
+    rf_settings = {'n_estimators': 300, 
+                   'min_samples_leaf': 2,
+                   'max_features': 0.5, 
+                   'max_samples': 0.5, 
+                   'bootstrap': True,
+                   'warm_start': False,
+                   'njobs': 1, # depends on your number of cpus
+                   'verbose': 0}
+    regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
+    fitkwargs = {} # RandomForestRegressor needs no attributes for .fit() function
+    verbose = 1
+    maxiter = 1
 
-        # select data chunk in cluster
-        databatch = data[labels == f, :]
-        maskbatch = mask[labels == f, :]
-        idxs = np.where(labels == f)[0]
+    impute = Imputation(maxiter=maxiter)
+    # note that the following step takes quite long because the
+    # toy dataset consists of random numbers and the RandomForest
+    # has quite a hard time fitting this. Will be much faster with
+    # correlated non-white noise data.
+    databatch_imputed, regr_dict = impute.impute(
+        databatch, maskbatch, regr_dict, verbose=2
+    )
 
-        # step 4: regression learning
-        print(f"step 4: regression learning for epoch {epoch} cluster {f} ...")
-        rf_settings = {
-            "n_estimators": 100,
-            "min_samples_leaf": 2,
-            "max_features": 0.5,
-            "max_samples": 0.5,
-        }
-
-        regr_dict = {
-            variable: RandomForestRegressor(**rf_settings) for variable in varnames
-        }
-
-        maxiter = 1
-
-        impute = Imputation(maxiter=maxiter)
-        # note that the following step takes quite long because the
-        # toy dataset consists of random numbers and the RandomForest
-        # has quite a hard time fitting this. Will be much faster with
-        # correlated non-white noise data.
-        databatch_imputed, regr_dict = impute.impute(
-            databatch, maskbatch, regr_dict, verbose=2
-        )
-
-        data_imputed[e, idxs, :] = databatch_imputed
-
-# take mean through all epochs
-print("take the mean from all clusters ...")
-data_imputed = data_imputed.mean(dim="epochs")
+    data_imputed[e, idxs, :] = databatch_imputed
 
 # unstack
 print("unstack ...")
-data_imputed = unstack(data_imputed)
+data = data.set_index(datapoints=("time", "landpoints")).unstack("datapoints")
 
 # renormalise
 print("renormalise and exp precip ...")
-data_imputed = renormalise(data_imputed, datamean, datastd)
-data_imputed = exp_precip(data_imputed, varname="precipitation")
+data = data * datastd + datamean
 
 # save result
-print("DONE")
+print("save result ...")
 # data_imputed.to_netcdf(...)
+print("DONE")
