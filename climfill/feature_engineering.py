@@ -147,9 +147,9 @@ def create_embedded_features(data, varnames, window_size, lag):
 
     # overwrite time stamp to current day
     tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values]
+        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values] # TODO works in vector way as well, use xr.DataArray.shift
     )
-
+ 
     # rename feature to not overwrite variable
     tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" for var in varnames])
 
