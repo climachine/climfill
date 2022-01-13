@@ -23,65 +23,6 @@ import numpy as np
 import xarray.ufuncs as xu
 
 
-def log_fracmis(data, logtext=""):
-    frac_mis = (np.isnan(data).sum() / data.size).values
-    print(f"fraction missing {logtext}: {frac_mis}")
-
-
-def logscale_precip(data, varname="precipitation"):
-    """
-    log-scale variable "varname" in data
-
-    Parameters
-    ----------
-    data: xarray dataarray, where varname is the variable that needs to be
-        log-scaled
-
-    Returns
-    ----------
-    data: data with variable log-scaled
-    """
-    # define lower threshold for "no rain"
-    data.loc[varname] = data.loc[varname].where(data.loc[varname] > 0.000001, -1)
-    data.loc[varname] = xu.log(data.loc[varname])
-
-    # all zero precip got -1, all -1 got nan, all nan get -20
-    data.loc[varname] = data.loc[varname].where(~np.isnan(data.loc[varname]), -20)
-    return data
-
-
-def create_precip_binary(data, varname="precipitation"):
-    ip = (data.loc[varname] < 0.00001) * 1
-    ip = ip.rename("ip")
-    return ip
-
-
-def normalise(data):
-    """
-    for each variable (i.e. across the dimension 'variable') normalise the data
-        to mean zero and standard deviation one
-
-    Parameters
-    ----------
-    data: xarray dataarray, with dimensions variable, time, landpoints
-
-    Returns
-    ----------
-    data: data normalised
-    datamean: mean for each variable, for renormalisation
-    datastd: std for each variable, for renormalisation
-    """
-    datamean = data.mean(dim=("time", "landpoints"))
-    datastd = data.std(dim=("time", "landpoints"))
-    data = (data - datamean) / datastd
-    return data, datamean, datastd
-
-
-def stack(data):
-    # add select variable to remove it in gapfill?
-    return data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
-
-
 def create_lat_lon_features(constant_maps):
     """
     create latitude and longitude as additional feature for data
@@ -95,7 +36,7 @@ def create_lat_lon_features(constant_maps):
     latitude_arr
     longitude_arr
     """
-    londata, latdata = np.meshgrid(constant_maps.longitude, constant_maps.latitude)
+    londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
     latitude_arr = (("latitude", "longitude"), latdata)
     longitude_arr = (("latitude", "longitude"), londata)
     return latitude_arr, longitude_arr
@@ -121,44 +62,37 @@ def create_time_feature(data):
     return time_arr
 
 
-def create_embedded_features(data, varnames, window_size, lag):
+def create_embedded_feature(data, start=-7, end=0, name='lag_7b'):
     """
-    for each variable, create embedded features of data with mean over window
-        size s and time lag l
+    create moving window mean along time axis from day 'start' until
+    day 'end' relative to current day using xr.DataArray.rolling
 
     Parameters
     ----------
     data: xarray dataarray, with dimensions including variable, time
-    varnames: list of all variables for calculating this embedded feature
-    window_size: int, window size in days
-    lag: int, lag of window from today in days
+
+    start: int, start of moving average in days from current day
+
+    end: int, end of moving average in days from current day
+
+    name: name of the resulting variable in the returned data
 
     Returns
     ----------
-    tmp: embedded features of variables to be added to data
+    feature: embedded features of variables to be added to data
     """
 
-    # rolling window average
-    tmp = (
-        data.sel(variable=varnames)
-        .rolling(time=np.abs(lag - window_size), center=False, min_periods=1)
-        .mean()
-    )
+    # TODO use xr.Dataarray.shift
 
-    # overwrite time stamp to current day
-    tmp = tmp.assign_coords(
-        time=[time + np.timedelta64(lag, "D") for time in tmp.coords["time"].values] # TODO works in vector way as well, use xr.DataArray.shift
-    )
- 
-    # rename feature to not overwrite variable
-    tmp = tmp.assign_coords(variable=[f"{var}lag_{window_size}ff" for var in varnames])
+    varnames = data.coords["variable"].values
 
-    # fill missing values in lagged features at beginning or end of time series
-    varmeans = tmp.mean(dim=("time"))
-    tmp = tmp.fillna(varmeans)
+    length = np.abs(start - end)
+    offset = max(start*(-1),end*(-1))
+    feature = data.rolling(time=length, center=False, min_periods=1).mean()
+    feature = feature.assign_coords(time=[time + np.timedelta64(offset,'D') for time in feature.coords['time'].values])
+    feature = feature.assign_coords(variable=[f'{var}{name}' for var in varnames])
 
-    return tmp
-
+    return feature
 
 def stack_constant_maps(data, constant_maps):
     ntimesteps = data.coords["time"].size
