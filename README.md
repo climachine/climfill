@@ -28,7 +28,7 @@ For a full documentation, check [1]. Furthermore, each function and class has a 
 The work is distributed under the Apache-2.0 License.
 
 ## References
-- [1] Bessenbacher, V., Gudmundsson, L. and Seneviratne, S.I.: CLIMFILL: A Framework for Intelligently Gap-filling Earth Observations (submitted to Geoscientific Model Development on 20th May 2021) 
+- [1] Bessenbacher, V., Gudmundsson, L. and Seneviratne, S.I.: CLIMFILL: A Framework for Intelligently Gap-filling Earth Observations (resubmitted to Geoscientific Model Development on 10th January 2022) 
 and references therein, especially
 - [2] Haylock, M. R, Hofstra, N., Klein Tank, A. M. G., Klok, E. J., Jones, P. D. and New, M. (2008): A European daily high-resolution gridded data set of surface temperature and precipitation for 1950–2006. Journal of Geophysical Research: Atmospheres, 113, D20. DOI:10.1029/2008JD010201
 - [3] Das, S., Roy, S. and Sambasivan, R. (2018): Fast Gaussian Process Regression for Big Data. Big Data Research, 14. DOI:10.1016/j.bdr.2018.06.002
