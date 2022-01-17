@@ -37,8 +37,8 @@ def create_lat_lon_features(constant_maps):
     longitude_arr
     """
     londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
-    latitude_arr = (("latitude", "longitude"), latdata)
-    longitude_arr = (("latitude", "longitude"), londata)
+    latitude_arr = (("lat", "lon"), latdata)
+    longitude_arr = (("lat", "lon"), londata)
     return latitude_arr, longitude_arr
 
 
