@@ -25,6 +25,7 @@ import xarray as xr
 import xarray.ufuncs as xu
 import regionmask
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.cluster import MiniBatchKMeans
 
 from climfill.feature_engineering import (
     create_embedded_feature,
@@ -53,9 +54,9 @@ print("create mask of missing values ...")
 mask = xu.isnan(data)
 
 ## get list of variables
-#print("get list of variables ...")
-#varnames = data.coords["variable"].values
-#print(varnames)
+print("get list of variables ...")
+varnames = data.coords["variable"].values
+print(varnames)
 
 # step 1: interpolation
 print("step 1: initial interpolation ...")
@@ -136,18 +137,18 @@ data["timedat"] = time_arr
 data = data.to_array()
 
 # step 2.4: add time lags as predictors
-lag_007b = create_embedded_feature(data.sel(variable=varnames), start=-7,   end=0, name='lag_7b')
-lag_030b = create_embedded_feature(data.sel(variable=varnames), start=-30,  end=-7, name='lag_30b')
-lag_180b = create_embedded_feature(data.sel(variable=varnames), start=-180, end=-30, name='lag_180b')
-lag_007f = create_embedded_feature(data.sel(variable=varnames), start=0,    end=7, name='lag_7f')
-lag_030f = create_embedded_feature(data.sel(variable=varnames), start=7,    end=30, name='lag_30f')
-lag_180f = create_embedded_feature(data.sel(variable=varnames), start=30,   end=180, name='lag_180f')
+lag_007b = create_embedded_feature(data, start=-7,   end=0, name='lag_7b')
+lag_030b = create_embedded_feature(data, start=-30,  end=-7, name='lag_30b')
+lag_180b = create_embedded_feature(data, start=-180, end=-30, name='lag_180b')
+lag_007f = create_embedded_feature(data, start=0,    end=7, name='lag_7f')
+lag_030f = create_embedded_feature(data, start=7,    end=30, name='lag_30f')
+lag_180f = create_embedded_feature(data, start=30,   end=180, name='lag_180f')
 data = xr.concat(
     [data, lag_007b, lag_030b, lag_180b, lag_007f, lag_030f, lag_180f], 
     dim="variable", join="left", fill_value=0)
 
 # fill still missing values at beginning of time series
-varmeans = dataxr.mean(dim=('time'))
+varmeans = data.mean(dim=('time'))
 data = data.fillna(varmeans)
 
 # step 2.5: concatenate constant maps and variables and features
@@ -160,12 +161,12 @@ datastd = data.std(dim=("time", "landpoints"))
 data = (data - datamean) / datastd
 
 # step 2.7: stack into tabular data
-data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
-mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
+data = data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
+mask = mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 # step 3: clustering
 print("step 3: clustering ...")
-data_imputed = xr.full_like(data.copy(deep=True), np.nan) # xr.full_like creates view
+data_imputed = xr.full_like(data.sel(variable=varnames).copy(deep=True), np.nan) # xr.full_like creates view
 n_clusters = 30
 labels = MiniBatchKMeans(n_clusters=n_clusters, verbose=0, batch_size=1000, random_state=0).fit_predict(data)
 
@@ -185,10 +186,9 @@ for c in range(n_clusters):
                    'max_samples': 0.5, 
                    'bootstrap': True,
                    'warm_start': False,
-                   'njobs': 1, # depends on your number of cpus
+                   'n_jobs': 1, # depends on your number of cpus
                    'verbose': 0}
     regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
-    fitkwargs = {} # RandomForestRegressor needs no attributes for .fit() function
     verbose = 1
     maxiter = 1
 
@@ -201,7 +201,10 @@ for c in range(n_clusters):
         databatch, maskbatch, regr_dict, verbose=2
     )
 
-    data_imputed[e, idxs, :] = databatch_imputed
+    databatch_imputed = databatch_imputed.sel(variable=varnames)
+
+    data_imputed[idxs, : ] = databatch_imputed
+    break # DEBUG
 
 # unstack
 print("unstack ...")
