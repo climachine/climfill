@@ -110,11 +110,9 @@ class Imputation:
         Internal function to handle iteration log
         """
         print(
-            (
-                f"{logtrunc} new delta: {np.round(self.delta_n, 9)}",
-                f"diff: {np.round(self.delta_n_old - self.delta_n, 9)}",
-                f"niter: {self.iter} niterbelow: {self.iter_below}",
-            )
+              f"{logtrunc} new delta: {np.round(self.delta_n, 9)}",
+              f"diff: {np.round(self.delta_n_old - self.delta_n, 9)}",
+              f"niter: {self.iter} niterbelow: {self.iter_below}",
         )
 
     def impute(self, data, mask, regr_dict, kwargs={}, verbose=1, logtrunc=""):
