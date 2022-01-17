@@ -151,7 +151,7 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs):
     varnames = data_anom.coords["variable"].values
     xx, yy = np.meshgrid(data_anom.lon, data_anom.lat)
 
-    for day in data_anom.time[:2]: # DEBUG not to take too long
+    for day in data_anom.time:#[:2]: # DEBUG not to take too long
         for varname in varnames:
 
             # select day and variable

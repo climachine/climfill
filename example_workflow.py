@@ -97,8 +97,8 @@ kriging_kwargs = {'tp':    {'constant_value': 0.01, # cross-validate and consult
                             'length_scale': 50.0,
                             'repeats': 5,
                             'npoints': 1000}}
-import warnings # DEBUG
-warnings.simplefilter('ignore')
+#import warnings # DEBUG
+#warnings.simplefilter('ignore')
 data_anom = gapfill_kriging(data_anom, landmask, kriging_kwargs)
 
 # step 1.4: add monthly climatology and anomalies back together
@@ -204,7 +204,7 @@ for c in range(n_clusters):
     databatch_imputed = databatch_imputed.sel(variable=varnames)
 
     data_imputed[idxs, : ] = databatch_imputed
-    break # DEBUG
+    #break # DEBUG
 
 # unstack
 print("unstack ...")
