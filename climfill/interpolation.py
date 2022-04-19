@@ -23,52 +23,6 @@ from scipy.interpolate import RBFInterpolator
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.gaussian_process import GaussianProcessRegressor
 
-def gapfill_interpolation(data, n=5):
-    """
-    Impute (i.e. Gapfill) data by infilling the spatiotemporal mean for each
-    variable independently. A cube of n 5-pixel side length surrounding each
-    missing value is taken and the mean of all non-missing values in this
-    cube is computed and used to infill the missing value . If a point cannot
-    be filled because all the values in the neighbourhood are missing as well,
-    the points is filled by the local monthly climatology. Any remaining
-    missing points are filled by the local temporal mean, or, if not available,
-    the global mean of the variable.
-
-    Parameters
-    ----------
-    data: xarray dataarray, with coordinates time, latitude, longitude
-        and variable
-
-    n: size of the cube in any spatiotemporal dimension
-
-    Returns
-    ----------
-    imputed_data: xarray dataarray, data of the same shape as input data,
-        where all values that were not missing are still the same and all
-        values that were originally missing are imputed via spatiotemporal mean
-    """
-
-    # infill spatiotemporal mean
-    log_fracmis(data, "before filtering")
-    footprint = np.ones((1, n, n, n))
-    tmp = generic_filter(data, mean_fct, footprint=footprint, mode="nearest")
-    data = data.fillna(tmp)
-    log_fracmis(data, "after filtering")
-
-    # infill dayofyear mean
-    seasonality = data.groupby("time.dayofyear").mean(dim="time")
-    data = data.groupby("time.dayofyear").fillna(seasonality).drop("dayofyear")
-    log_fracmis(data, "after seasonality")
-
-    # infill variable mean
-    temporal_mean = data.mean(dim=("time"))
-    variable_mean = data.mean(dim=("time", "latitude", "longitude"))
-    data = data.fillna(temporal_mean)
-    data = data.fillna(variable_mean)
-    log_fracmis(data, "after mean impute")
-
-    return data
-
 def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
     """
     Impute (i.e. Gapfill) data by applying thin-plate-spline interpolation
