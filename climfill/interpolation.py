@@ -48,21 +48,24 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
     """
 
     data = xr.full_like(data_monthly, np.nan)
-    varnames = data.coords["variable"].values
-    xx, yy = np.meshgrid(data.lon, data.lat)
+    varnames = data_monthly.coords["variable"].values
+    xx, yy = np.meshgrid(data_monthly.lon, data_monthly.lat)
 
-    for month in data.month:
+    for month in data_monthly.month:
         for varname in varnames:
             print(f'calculate month {month.item()}, {varname} ...')
 
             # select month and variable
-            tmp = data.sel(month=month, variable=varname)
+            tmp = data_monthly.sel(month=month, variable=varname)
             missing = landmask & np.isnan(tmp)
             notna = tmp.notnull()
 
             # check if some values are missing
             if missing.sum().values.item() == 0:
                 print(f'month {month.item()}, {varname}, no missing values encountered. skip...')
+                continue
+            elif notna.sum().values.item() == 0:
+                print(f'month {month.item()}, {varname}, all values are missing. spatial interpolation not possible. skip...')
                 continue
 
             # select only missing points
