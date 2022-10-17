@@ -47,14 +47,15 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
         values that were originally missing are imputed 
     """
 
-    varnames = data_monthly.coords["variable"].values
-    xx, yy = np.meshgrid(data_monthly.lon, data_monthly.lat)
+    data = data_monthly.copy()
+    varnames = data.coords["variable"].values
+    xx, yy = np.meshgrid(data.lon, data.lat)
 
-    for month in data_monthly.month:
+    for month in data.month:
         for varname in varnames:
 
             # select month and variable
-            tmp = data_monthly.sel(month=month, variable=varname)
+            tmp = data.sel(month=month, variable=varname)
             missing = landmask & np.isnan(tmp)
             notna = tmp.notnull()
 
@@ -72,9 +73,9 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
                 res = np.full_like(xy_mis[:,0], np.nan)
 
             # save result
-            data_monthly.loc[varname, month,:,:].values[missing] = res
+            data.loc[varname, month,:,:].values[missing] = res
     
-    return data_monthly
+    return data
 
 def gapfill_kriging(data_anom, landmask, kriging_kwargs):
     """
