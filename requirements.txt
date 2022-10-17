@@ -2,4 +2,3 @@ numpy
 scikit-learn
 xarray
 scipy
-netcdf4 (recommendend if you want to read from or write to netCDF files)
