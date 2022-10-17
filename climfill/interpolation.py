@@ -62,6 +62,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
             # check if some values are missing
             if missing.sum().values.item() == 0:
                 continue
+            print(month, varname)
 
             # select only missing points
             xy_obs = np.c_[xx[notna.values], yy[notna.values]] 
