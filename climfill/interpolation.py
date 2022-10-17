@@ -53,6 +53,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
 
     for month in data.month:
         for varname in varnames:
+            print(f'calculate month {month.item()}, {varname} ...')
 
             # select month and variable
             tmp = data.sel(month=month, variable=varname)
@@ -61,8 +62,8 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
 
             # check if some values are missing
             if missing.sum().values.item() == 0:
+                print(f'month {month.item()}, {varname}, no missing values encountered. skip...')
                 continue
-            print(month, varname)
 
             # select only missing points
             xy_obs = np.c_[xx[notna.values], yy[notna.values]] 
@@ -78,6 +79,8 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
                 res = np.full_like(xy_mis[:,0], np.nan)
 
             # save result
+            # xarray/dask issue https://github.com/pydata/xarray/issues/3813
+            # value assignment only works if non-dask array
             data.loc[varname, month,:,:].values[missing] = res
     
     return data
