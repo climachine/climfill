@@ -47,7 +47,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
         values that were originally missing are imputed 
     """
 
-    data = data_monthly.copy()
+    data = xr.full_like(data, np.nan)
     varnames = data.coords["variable"].values
     xx, yy = np.meshgrid(data.lon, data.lat)
 
