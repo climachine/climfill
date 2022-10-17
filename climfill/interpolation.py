@@ -131,6 +131,9 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs):
             if xy_test.size == 0:
                 print(f'{day.values} {varname} SKIPPED no missing points')
                 continue
+            if xy_train.size == 0:
+                print(f'{day.values} {varname} SKIPPED all missing')
+                continue
         
             # gapfill missing values
             k, n = kriging_kwargs[varname]['repeats'], kriging_kwargs[varname]['npoints']
