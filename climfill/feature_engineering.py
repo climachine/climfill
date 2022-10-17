@@ -20,8 +20,6 @@ processes in your dataset.
 """
 
 import numpy as np
-import xarray.ufuncs as xu
-
 
 def create_lat_lon_features(constant_maps):
     """

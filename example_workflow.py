@@ -22,7 +22,6 @@ import random
 
 import numpy as np
 import xarray as xr
-import xarray.ufuncs as xu
 import regionmask
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.cluster import MiniBatchKMeans
@@ -119,7 +118,7 @@ constant_maps = constant_maps.to_array()
 
 # step 2.2: create mask of missing values
 print("create mask of missing values ...")
-mask = xu.isnan(data)
+mask = np.isnan(data)
 
 # step 2.3 (optional): remove ocean points for reducing file size
 landlat, landlon = np.where(landmask)
