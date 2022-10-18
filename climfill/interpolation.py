@@ -47,7 +47,6 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
         values that were originally missing are imputed 
     """
 
-    data = xr.full_like(data_monthly, np.nan)
     varnames = data_monthly.coords["variable"].values
     xx, yy = np.meshgrid(data_monthly.lon, data_monthly.lat)
 
@@ -84,9 +83,9 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
             # save result
             # xarray/dask issue https://github.com/pydata/xarray/issues/3813
             # value assignment only works if non-dask array
-            data.loc[varname, month,:,:].values[missing] = res
+            data_monthly.loc[varname, month,:,:].values[missing] = res
     
-    return data
+    return data_monthly
 
 def gapfill_kriging(data_anom, landmask, kriging_kwargs):
     """
