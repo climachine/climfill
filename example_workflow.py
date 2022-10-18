@@ -53,6 +53,10 @@ print("get list of variables ...")
 varnames = data.coords["variable"].values
 print(varnames)
 
+# create mask of missing values: before first gapfill
+print("create mask of missing values ...")
+mask = np.isnan(data)
+
 # step 1: interpolation
 print("step 1: initial interpolation ...")
 
@@ -116,11 +120,7 @@ constant_maps["latdata"] = latitude_arr
 constant_maps["londata"] = longitude_arr
 constant_maps = constant_maps.to_array()
 
-# step 2.2: create mask of missing values
-print("create mask of missing values ...")
-mask = np.isnan(data)
-
-# step 2.3 (optional): remove ocean points for reducing file size
+# step 2.2 (optional): remove ocean points for reducing file size
 landlat, landlon = np.where(landmask)
 data = data.isel(lon=xr.DataArray(landlon, dims="landpoints"),
                  lat=xr.DataArray(landlat, dims="landpoints"))
@@ -129,13 +129,13 @@ mask = mask.isel(lon=xr.DataArray(landlon, dims="landpoints"),
 constant_maps = constant_maps.isel(lon=xr.DataArray(landlon, dims="landpoints"),
                                    lat=xr.DataArray(landlat, dims="landpoints"))
 
-# step 2.4: add time as predictor
+# step 2.3: add time as predictor
 time_arr = create_time_feature(data)
 data = data.to_dataset(dim="variable")
 data["timedat"] = time_arr
 data = data.to_array()
 
-# step 2.5: add time lags as predictors
+# step 2.4: add time lags as predictors
 lag_007b = create_embedded_feature(data, start=-7,   end=0, name='lag_7b')
 lag_030b = create_embedded_feature(data, start=-30,  end=-7, name='lag_30b')
 lag_180b = create_embedded_feature(data, start=-180, end=-30, name='lag_180b')
@@ -150,16 +150,16 @@ data = xr.concat(
 varmeans = data.mean(dim=('time'))
 data = data.fillna(varmeans)
 
-# step 2.6: concatenate constant maps and variables and features
+# step 2.5: concatenate constant maps and variables and features
 constant_maps = stack_constant_maps(data, constant_maps)
 data = xr.concat([data, constant_maps], dim="variable")
 
-# step 2.7: normalise data
+# step 2.6: normalise data
 datamean = data.mean(dim=("time", "landpoints"))
 datastd = data.std(dim=("time", "landpoints"))
 data = (data - datamean) / datastd
 
-# step 2.8: stack into tabular data
+# step 2.7: stack into tabular data
 data = data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 mask = mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
