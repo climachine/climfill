@@ -26,6 +26,8 @@ import regionmask
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.cluster import MiniBatchKMeans
 
+from climfill.verification import delete_minicubes
+
 from climfill.feature_engineering import (
     create_embedded_feature,
     create_lat_lon_features,
@@ -59,7 +61,16 @@ mask = np.isnan(data)
 
 # create additional missing values for verification/cross-validation (optional)
 #data.to_netcdf('data_orig... # save original values of minicubes for verification
+print("create additonal missing values for CV...")
+frac_mis = 0.1 
+ncubes = 20
+crossvalidation_year = '2003'
 data = delete_minicubes(data, frac_missing=0.1)
+for varname in varnames:
+    tmp = delete_minicubes(mask.sel(time=crossvalidation_year, variable=varname).drop('variable').load(),
+                           frac_mis, ncubes)
+    mask.loc[dict(variable=varname, time=crossvalidation_year)] = tmp
+data = data.where(np.logical_not(mask))
 
 # step 1: interpolation
 print("step 1: initial interpolation ...")
