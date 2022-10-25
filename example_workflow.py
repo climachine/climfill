@@ -57,6 +57,10 @@ print(varnames)
 print("create mask of missing values ...")
 mask = np.isnan(data)
 
+# create additional missing values for verification/cross-validation (optional)
+#data.to_netcdf('data_orig... # save original values of minicubes for verification
+data = delete_minicubes(data, frac_missing=0.1)
+
 # step 1: interpolation
 print("step 1: initial interpolation ...")
 
@@ -165,7 +169,7 @@ mask = mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 # step 3: clustering
 print("step 3: clustering ...")
-data_imputed = xr.full_like(data.sel(variable=varnames).copy(deep=True), np.nan) # xr.full_like creates view
+data_gapfilled = xr.full_like(data.sel(variable=varnames).copy(deep=True), np.nan) # xr.full_like creates view
 n_clusters = 30
 labels = MiniBatchKMeans(n_clusters=n_clusters, verbose=0, batch_size=1000, random_state=0).fit_predict(data)
 
@@ -185,8 +189,7 @@ for c in range(n_clusters):
                    'max_samples': 0.5, 
                    'bootstrap': True,
                    'warm_start': False,
-                   'n_jobs': 1, # depends on your number of cpus
-                   'verbose': 0}
+                   'n_jobs': 1} # depends on your number of cpus
     regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
     verbose = 1
     maxiter = 1
@@ -195,14 +198,14 @@ for c in range(n_clusters):
     # note that the following step takes quite long because the
     # toy dataset consists of random numbers and the RandomForest
     # has quite a hard time fitting this. Will be much faster with
-    # correlated non-white noise data.
-    databatch_imputed, regr_dict = impute.impute(
-        databatch, maskbatch, regr_dict, verbose=2
+    # correlated non-white-noise data.
+    databatch_gapfilled, regr_dict = impute.impute(
+        databatch, maskbatch, regr_dict, verbose=verbose
     )
 
-    databatch_imputed = databatch_imputed.sel(variable=varnames)
+    databatch_gapfilled = databatch_gapfilled.sel(variable=varnames)
 
-    data_imputed[idxs, : ] = databatch_imputed
+    data_gapfilled[idxs, : ] = databatch_gapfilled
     #break # DEBUG
 
 # unstack
@@ -215,5 +218,5 @@ data = data * datastd + datamean
 
 # save result
 print("save result ...")
-# data_imputed.to_netcdf(...)
+# data_gapfilled.to_netcdf(...)
 print("DONE")
