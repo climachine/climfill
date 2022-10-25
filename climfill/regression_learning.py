@@ -115,7 +115,7 @@ class Imputation:
               f"niter: {self.iter} niterbelow: {self.iter_below}",
         )
 
-    def impute(self, data, mask, regr_dict, kwargs={}, verbose=1, logtrunc=""):
+    def impute(self, data, mask, regr_dict, kwargs={}, verbose=0, logtrunc=""):
         """
         Impute (i.e. Gapfill) data by regressing each variable (i.e. column)
         in data with all other variables in data.
@@ -138,7 +138,7 @@ class Imputation:
         kwargs: optional. Some regression functions need additional keywords
             for the .fit() method. provide these here
 
-        verbose: optional, int debug verbosity
+        verbose: optional, int debug verbosity, >= 0, default 0
 
         Returns
         ----------
@@ -279,8 +279,8 @@ class Imputation:
             # check convergence criteria
             if self.iter > self.maxiter:  # reached maximum number of iterations
 
-                if verbose >= -1:
-                    self._logiter(f"{logtrunc} TRUNCATED JOB")
+                if verbose >= 0:
+                    self._logiter(f"{logtrunc} MAXITER REACHED")
                 return data_old, self.fittedregr
 
             elif (
@@ -291,8 +291,8 @@ class Imputation:
 
                 if self.iter_below > self.miniter_below:
                     # convergence achieved already miniter_below times
-                    if verbose >= -1:
-                        self._logiter(f"{logtrunc} FINISHED JOB")
+                    if verbose >= 0:
+                        self._logiter(f"{logtrunc} CONVERGENCE REACHED")
                     return data_old, self.fittedregr
 
             else:
