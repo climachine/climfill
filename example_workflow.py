@@ -26,8 +26,6 @@ import regionmask
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.cluster import MiniBatchKMeans
 
-from climfill.verification import delete_minicubes
-
 from climfill.feature_engineering import (
     create_embedded_feature,
     create_lat_lon_features,
@@ -45,7 +43,7 @@ from create_test_data import (
 print("load data ...")
 data = create_gappy_test_data()
 constant_maps = create_constant_test_data()
-landmask = regionmask.defined_regions.natural_earth.land_110.mask(data.lon,data.lat)
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon,data.lat)
 landmask = landmask.where(landmask!=0,1) # boolean mask: land is True, ocean is False 
 landmask = landmask.where(~np.isnan(landmask),0)
 landmask = landmask.astype(bool)
@@ -58,19 +56,6 @@ print(varnames)
 # create mask of missing values: before first gapfill
 print("create mask of missing values ...")
 mask = np.isnan(data)
-
-# create additional missing values for verification/cross-validation (optional)
-#data.to_netcdf('data_orig... # save original values of minicubes for verification
-print("create additonal missing values for CV...")
-frac_mis = 0.1 
-ncubes = 20
-crossvalidation_year = '2003'
-data = delete_minicubes(data, frac_missing=0.1)
-for varname in varnames:
-    tmp = delete_minicubes(mask.sel(time=crossvalidation_year, variable=varname).drop('variable').load(),
-                           frac_mis, ncubes)
-    mask.loc[dict(variable=varname, time=crossvalidation_year)] = tmp
-data = data.where(np.logical_not(mask))
 
 # step 1: interpolation
 print("step 1: initial interpolation ...")
@@ -129,10 +114,10 @@ if np.isnan(data).sum() != 0: # if still missing values present
 print("step 2: feature engineering ...")
 
 # step 2.1:  add longitude and latitude as predictors
-latitude_arr, longitude_arr = create_lat_lon_features(constant_maps)
 constant_maps = constant_maps.to_dataset(dim="variable")
-constant_maps["latdata"] = latitude_arr
-constant_maps["londata"] = longitude_arr
+londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
+constant_maps["latdata"] = (("lat", "lon"), latdata)
+constant_maps["londata"] = (("lat", "lon"), londata)
 constant_maps = constant_maps.to_array()
 
 # step 2.2 (optional): remove ocean points for reducing file size
@@ -179,6 +164,7 @@ data = data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 mask = mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 # step 3: clustering
+# TODO nan are still present
 print("step 3: clustering ...")
 data_gapfilled = xr.full_like(data.sel(variable=varnames).copy(deep=True), np.nan) # xr.full_like creates view
 n_clusters = 30
