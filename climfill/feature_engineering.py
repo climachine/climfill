@@ -21,25 +21,6 @@ processes in your dataset.
 
 import numpy as np
 
-def create_lat_lon_features(constant_maps):
-    """
-    create latitude and longitude as additional feature for data
-
-    Parameters
-    ----------
-    data: xarray dataarray, with dimensions including latitude and longitude
-
-    Returns
-    ----------
-    latitude_arr
-    longitude_arr
-    """
-    londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
-    latitude_arr = (("lat", "lon"), latdata)
-    longitude_arr = (("lat", "lon"), londata)
-    return latitude_arr, longitude_arr
-
-
 def create_time_feature(data):
     """
     create timestep as additional feature for data
