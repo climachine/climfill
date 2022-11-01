@@ -39,6 +39,8 @@ from create_test_data import (
     create_gappy_test_data,
 )
 
+from climfill.postprocessing import to_latlon
+
 # load your data
 print("load data ...")
 data = create_gappy_test_data()
@@ -208,6 +210,7 @@ for c in range(n_clusters):
 # unstack
 print("unstack ...")
 data = data.set_index(datapoints=("time", "landpoints")).unstack("datapoints")
+data = to_latlon(data, landmask)
 
 # renormalise
 print("renormalise and exp precip ...")
