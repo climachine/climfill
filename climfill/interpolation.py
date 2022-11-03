@@ -23,7 +23,7 @@ from scipy.interpolate import RBFInterpolator
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.gaussian_process import GaussianProcessRegressor
 
-def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
+def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
     """
     Impute (i.e. Gapfill) data by applying thin-plate-spline interpolation
     on each variable and each timestep independently.
@@ -52,7 +52,8 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
 
     for month in data_monthly.month:
         for varname in varnames:
-            print(f'calculate month {month.item()}, {varname} ...')
+            if verbose > 0:
+                print(f'calculate month {month.item()}, {varname} ...')
 
             # select month and variable
             tmp = data_monthly.sel(month=month, variable=varname)
@@ -61,10 +62,12 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
 
             # check if some values are missing
             if missing.sum().values.item() == 0:
-                print(f'month {month.item()}, {varname}, no missing values encountered. skip...')
+                if verbose > 0:
+                    print(f'month {month.item()}, {varname}, no missing values encountered. skip...')
                 continue
             elif notna.sum().values.item() == 0:
-                print(f'month {month.item()}, {varname}, all values are missing. spatial interpolation not possible. skip...')
+                if verbose > 0:
+                    print(f'month {month.item()}, {varname}, all values are missing. spatial interpolation not possible. skip...')
                 continue
 
             # select only missing points
@@ -77,7 +80,8 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
             try:
                 res = interpolator(xy_mis)
             except Exception as e:
-                print(f'{month.item()}, {varname}, {e} in RBFInterpolator occurred, gaps not filled')
+                if verbose > 0:
+                    print(f'{month.item()}, {varname}, {e} in RBFInterpolator occurred, gaps not filled')
                 res = np.full_like(xy_mis[:,0], np.nan)
 
             # save result
@@ -87,7 +91,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs):
     
     return data_monthly
 
-def gapfill_kriging(data_anom, landmask, kriging_kwargs):
+def gapfill_kriging(data_anom, landmask, kriging_kwargs, verbose=1):
     """
     Impute (i.e. Gapfill) data by applying spatial kriging
     on each variable and each timestep independently.
@@ -128,10 +132,12 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs):
             xy_test = np.c_[xx[missing.values], yy[missing.values]]
             xy_train = np.c_[xx[~np.isnan(tmp.values)], yy[~np.isnan(tmp.values)], y]
             if xy_test.size == 0:
-                print(f'{day.values} {varname} SKIPPED no missing points')
+                if verbose > 0:
+                    print(f'{day.values} {varname} SKIPPED no missing points')
                 continue
             if xy_train.size == 0:
-                print(f'{day.values} {varname} SKIPPED all missing')
+                if verbose > 0:
+                    print(f'{day.values} {varname} SKIPPED all missing')
                 continue
         
             # gapfill missing values
@@ -148,7 +154,8 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs):
                 try:
                     gp.fit(xy_train[:n,:2],xy_train[:n,-1])
                 except ValueError as e:
-                    print(f'{e} {varname} SKIPPED')
+                    if verbose > 0:
+                        print(f'{e} {varname} SKIPPED')
                 Z = gp.predict(xy_test)
                 res[i,:] = Z
             
