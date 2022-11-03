@@ -18,6 +18,7 @@ back to its lat lon time shape.
 """
 
 import numpy as np
+import xarray as xr
 
 def to_latlon(data, landmask): 
     """
