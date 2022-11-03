@@ -28,7 +28,6 @@ from sklearn.cluster import MiniBatchKMeans
 
 from climfill.feature_engineering import (
     create_embedded_feature,
-    create_lat_lon_features,
     create_time_feature,
     stack_constant_maps,
 )
@@ -166,7 +165,6 @@ data = data.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 mask = mask.stack(datapoints=("time", "landpoints")).reset_index("datapoints").T
 
 # step 3: clustering
-# TODO nan are still present
 print("step 3: clustering ...")
 data_gapfilled = xr.full_like(data.sel(variable=varnames).copy(deep=True), np.nan) # xr.full_like creates view
 n_clusters = 30
