@@ -55,6 +55,8 @@ def delete_minicubes(mask, frac_mis, ncubes, verbose=1):
     n_mis = mask.sum().item()
     n_land = np.logical_not(np.isnan(mask)).sum().item()
     n_obs = n_land - n_mis
+    if n_obs == 0:
+        raise ValueError('No observed values on land in data')
 
     # create minicubes of observed data for cross-validation
     nt = len(mask.time) 
