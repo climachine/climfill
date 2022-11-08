@@ -44,7 +44,10 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
     ----------
     imputed_data: xarray dataarray, data of the same shape as input data,
         where all values that were not missing are still the same and all
-        values that were originally missing are imputed 
+        values that were originally missing are imputed, if the interpolation
+        successfully completed. Originally missing values that are still nan
+        after applying this function could maybe not have been gapfilled
+        by spatial interpolation, see warning prints.
     """
 
     varnames = data_monthly.coords["variable"].values
@@ -52,7 +55,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
 
     for month in data_monthly.month:
         for varname in varnames:
-            if verbose > 0:
+            if verbose > 1:
                 print(f'calculate month {month.item()}, {varname} ...')
 
             # select month and variable
@@ -122,6 +125,9 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs, verbose=1):
 
     for day in data_anom.time:#[:2]: # DEBUG not to take too long
         for varname in varnames:
+            if verbose > 1:
+                print(f'{day.values} {varname} calculate ...')
+
 
             # select day and variable
             tmp = data_anom.sel(time=day, variable=varname)
