@@ -76,12 +76,12 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
             y_obs = tmp.values[notna]
 
             # interpolate missing values
-            interpolator = RBFInterpolator(xy_obs, y_obs, **rbf_kwargs[varname])
             try:
+                interpolator = RBFInterpolator(xy_obs, y_obs, **rbf_kwargs[varname])
                 res = interpolator(xy_mis)
             except Exception as e:
                 if verbose > 0:
-                    print(f'{month.item()}, {varname}, {e} in RBFInterpolator occurred, gaps not filled')
+                    print(f'{month.item()}, {varname}, Exception "{e}" in RBFInterpolator occurred, gaps not filled')
                 res = np.full_like(xy_mis[:,0], np.nan)
 
             # save result
