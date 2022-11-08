@@ -22,7 +22,7 @@ data that you can set missing now using this mask.
 import numpy as np
 import xarray as xr
 
-def delete_minicubes(mask, frac_mis, ncubes):
+def delete_minicubes(mask, frac_mis, ncubes, verbose=1):
     """
     delete originally observed data additionally to the missing data for 
     cross-validation or verification of the gapfilling framework.
@@ -81,9 +81,11 @@ def delete_minicubes(mask, frac_mis, ncubes):
         mask_verification = mask_verification.where(minicubes != selected_cube, True)
         n_cv = mask_verification.sum().load().item() - n_mis
         frac_cv = n_cv / n_obs
-        print(f'fraction crossval data from observed data: {n_cv} {frac_cv}')
+        if verbose >= 2:
+            print(f'fraction crossval data from observed data: {n_cv} {frac_cv}')
         if frac_cv > frac_mis: 
-            print(f'fraction crossval data from observed data: {frac_cv}')
+            if verbose >= 1:
+                print(f'fraction crossval data from observed data: {frac_cv}')
             break
 
     return mask_verification
