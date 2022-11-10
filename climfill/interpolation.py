@@ -51,6 +51,10 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
     """
 
     varnames = data_monthly.coords["variable"].values
+
+    if not set(rbf_kwargs.keys()) == set(varnames):
+        raise AttributeError('variables in data_monthly are not identical to' +
+                             'keys in rbf_kwargs dictionary')
     xx, yy = np.meshgrid(data_monthly.lon, data_monthly.lat)
 
     for month in data_monthly.month:
@@ -121,6 +125,11 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs, verbose=1):
     """
 
     varnames = data_anom.coords["variable"].values
+
+    if not set(kriging_kwargs.keys()) == set(varnames):
+        raise AttributeError('variables in data_monthly are not identical to' +
+                             'keys in rbf_kwargs dictionary')
+
     xx, yy = np.meshgrid(data_anom.lon, data_anom.lat)
 
     for day in data_anom.time:#[:2]: # DEBUG not to take too long
