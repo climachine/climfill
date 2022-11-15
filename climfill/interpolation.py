@@ -164,7 +164,7 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs, verbose=1):
             for i in range(k):
                 bounds = (1e-6,1e6)
                 np.random.shuffle(xy_train)
-                constant_value_bounds = (1e-10,1e5)
+                constant_value_bounds = (1e-10,1e10)
                 kernel = C(constant_value,constant_value_bounds) * RBF(length_scale)
                 gp = GaussianProcessRegressor(kernel, copy_X_train=False)
                 try:
