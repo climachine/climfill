@@ -88,7 +88,7 @@ def gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs, verbose=1):
                 res = interpolator(xy_mis)
             except Exception as e:
                 if verbose > 0:
-                    print(f'{month.item()}, {varname}, Exception "{e}" in RBFInterpolator occurred, gaps not filled')
+                    print(f'{month.item()}, {varname}, Exception <<<{e}>>> in RBFInterpolator occurred, gaps not filled')
                 res = np.full_like(xy_mis[:,0], np.nan)
 
             # save result
@@ -164,7 +164,8 @@ def gapfill_kriging(data_anom, landmask, kriging_kwargs, verbose=1):
             for i in range(k):
                 bounds = (1e-6,1e6)
                 np.random.shuffle(xy_train)
-                kernel = C(constant_value) * RBF(length_scale)
+                constant_value_bounds = (1e-8,1e8)
+                kernel = C(constant_value,constant_value_bounds) * RBF(length_scale)
                 gp = GaussianProcessRegressor(kernel, copy_X_train=False)
                 try:
                     gp.fit(xy_train[:n,:2],xy_train[:n,-1])
