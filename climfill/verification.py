@@ -61,7 +61,6 @@ def delete_minicubes(mask, frac_mis, ncubes, verbose=1):
     # create minicubes of observed data for cross-validation
     nt = len(mask.time) 
     nx, ny = len(mask.lon), len(mask.lat)
-    ncubes = ncubes # along each axis
     a = np.arange(ncubes**3).reshape(ncubes,ncubes,ncubes)
     b = a.repeat(np.ceil(nt/ncubes),0).repeat(np.ceil(ny/ncubes),1).repeat(np.ceil(nx/ncubes),2)
     b = b[:nt,:ny,:nx] # trim
@@ -91,3 +90,23 @@ def delete_minicubes(mask, frac_mis, ncubes, verbose=1):
             break
 
     return mask_verification
+
+def create_minicubes(mask, ncubes, verbose=1):
+    """
+    """
+
+    # create minicubes of observed data for cross-validation
+    nt = len(mask.time) 
+    nx, ny = len(mask.lon), len(mask.lat)
+    a = np.arange(ncubes**3).reshape(ncubes,ncubes,ncubes)
+    b = a.repeat(np.ceil(nt/ncubes),0).repeat(np.ceil(ny/ncubes),1).repeat(np.ceil(nx/ncubes),2)
+    b = b[:nt,:ny,:nx] # trim
+
+    # wrap around xarray
+    minicubes = xr.full_like(mask, np.nan) # to xarray for .isin fct
+    minicubes[:] = b
+
+    # check only those on land for faster convergence
+    minicubes = minicubes.where(~np.isnan(mask)) # only consider cubes on land
+
+    return minicubes
